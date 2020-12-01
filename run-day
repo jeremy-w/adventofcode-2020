@@ -1,0 +1,24 @@
+#!/bin/bash
+set -euo pipefail
+
+if ! [[ -x $(which mmc) ]]; then
+    echo "$0: You must install the Mercury compiler first: brew install mercury" 1>&2
+    exit 69 # EX_UNAVAILABLE
+fi
+
+if [[ $# -lt 1 ]]; then
+    echo "usage: $0 N
+
+Builds and runs the source file for day N,
+The input for the day is supplied on stdin.
+
+Example:
+
+    $0 1" 1>&2
+    exit 64 # EX_USAGE
+fi
+
+mkdir -p build/
+cd build/
+mmc --use-subdirs "../src/day$1.m"
+"./day$1" < "../input/day$1.txt"

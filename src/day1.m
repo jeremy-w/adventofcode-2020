@@ -23,4 +23,8 @@ Test case:
 :- implementation.
 
 main(!IO) :-
+    % read stdin, one number per line, into an array
+    % smart bruteforce search:
+    % - sort the array large => small
+    % - for each from start to end, start summing from end to start, and bail when exceeding 2020
     io.write_string("Hi!\n", !IO).

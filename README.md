@@ -9,13 +9,13 @@ This year's challenges can be found at: https://adventofcode.com/2020
 
 ## Building & Running
 
-`mmc` drops a lot of stuff in the current directory, so you'll want to:
+`mmc` drops a lot of stuff in the current directory unless you pass `--use-subdirs`, so you'll want to:
 
 ```
 # fish syntax
 cd build/
 set -x DAY 1
-mmc ../src/day$DAY.m && ./day$DAY < ../input/day$DAY.txt
+mmc --use-subdirs ../src/day$DAY.m && ./day$DAY < ../input/day$DAY.txt
 ```
 
 There's probably some clever way to automate this with Make, but, meh.
