@@ -20,5 +20,6 @@ fi
 
 mkdir -p build/
 cd build/
-mmc --use-subdirs "../src/day$1.m"
+# XXX: Homebrew's build is not compiled in any grade that supports debugging. :(
+mmc -E --use-subdirs "../src/day$1.m"
 "./day$1" < "../input/day$1.txt"
