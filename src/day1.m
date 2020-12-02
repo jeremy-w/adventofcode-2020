@@ -26,27 +26,27 @@ Test case:
 :- import_module string, int, list, stream, char.
 
 :- pred cons_as_int(string::in, list(int)::in, list(int)::out) is det.
-cons_as_int(Line, Accu0, Accu) :-
+cons_as_int(Line, !Accu) :-
     Num = string.det_to_int(strip(Line)),
-    Accu = [Num | Accu0].
+    !:Accu = [Num | !.Accu].
 
 % XXX: There should be some way to do this using a fold, rather than manually.
 % And since we have the slurp the whole array in, there's probably a better way to parse out whitespace-separated stuff, too. Ah well.
 :- pred cons_lines_as_ints(input_stream::in, list(int)::in, list(int)::out, io::di, io::uo) is det.
-cons_lines_as_ints(Stream, Accu0, Accu, !IO) :-
+cons_lines_as_ints(Stream, !Accu, !IO) :-
     read_line_as_string(Stream, MaybeLine, !IO),
     (
         MaybeLine = ok(Line),
-        cons_as_int(Line, Accu0, Accu1),
-        cons_lines_as_ints(Stream, Accu1, Accu, !IO)
+        cons_as_int(Line, !Accu),
+        cons_lines_as_ints(Stream, !Accu, !IO)
     ;
         MaybeLine = eof,
-        Accu = Accu0
+        !:Accu = !.Accu
     ;
         MaybeLine = error(Error),
         io.write(Error, !IO),
         io.nl(!IO),
-        Accu = Accu0
+        !:Accu = !.Accu
     ).
 
 main(!IO) :-
