@@ -52,10 +52,14 @@ cons_lines_as_ints(Stream, Accu0, Accu, !IO) :-
 main(!IO) :-
     % read stdin, one number per line, into a list.
     Stream = io.stdin_stream `with_type` io.input_stream,
-    cons_lines_as_ints(Stream, [], Numbers, !IO),
+    cons_lines_as_ints(Stream, [], UnsortedNumbers, !IO),
 
     % smart bruteforce search:
     % - sort the array large => small
+    Desc = (pred(Left::in, Right::in, Result::out) is det :-
+        compare(Result, Right, Left)),
+    sort(Desc, UnsortedNumbers, Numbers),
+
     % - for each from start to end, start summing from end to start, and bail when exceeding 2020
     io.write(Numbers, !IO),
     io.nl(!IO).
