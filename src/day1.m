@@ -35,10 +35,9 @@ char_list_cons(X, Xs, [ X | Xs ]).
 
 main(!IO) :-
     % read stdin, one number per line, into a list.
-    Stream = io.stdin_stream,
-    stream.name(Stream, Name, !IO),
-    Numbers = [1, 2, 3, 4],
-    stream.input_stream_fold(Stream, char_list_cons, [], PartialResult, !IO),
+    Stream = io.stdin_stream `with_type` io.input_stream,
+    cons_as_int("12345", [], Numbers),
+    stream.input_stream_fold(Stream, cons_as_int, [] `with_type` list(int), PartialResult, !IO),
     (
         PartialResult = ok(Result),
         io.write(Result, !IO),
@@ -54,7 +53,5 @@ main(!IO) :-
     % smart bruteforce search:
     % - sort the array large => small
     % - for each from start to end, start summing from end to start, and bail when exceeding 2020
-    io.write_string(Name, !IO),
-    io.nl(!IO),
     io.write(Numbers, !IO),
     io.nl(!IO).
