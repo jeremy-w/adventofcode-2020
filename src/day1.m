@@ -27,7 +27,7 @@ Test case:
 
 :- pred cons_as_int(string::in, list(int)::in, list(int)::out) is det.
 cons_as_int(Line, Accu0, Accu) :-
-    Num = string.det_to_int(Line),
+    Num = string.det_to_int(strip(Line)),
     Accu = [Num | Accu0].
 
 :- pred char_list_cons(char::in, list(char)::in, list(char)::out) is det.
@@ -36,18 +36,18 @@ char_list_cons(X, Xs, [ X | Xs ]).
 main(!IO) :-
     % read stdin, one number per line, into a list.
     Stream = io.stdin_stream `with_type` io.input_stream,
-    cons_as_int("12345", [], Numbers),
-    stream.input_stream_fold(Stream, cons_as_int, [] `with_type` list(int), PartialResult, !IO),
+    read_line_as_string(Stream, MaybeLine, !IO),
     (
-        PartialResult = ok(Result),
-        io.write(Result, !IO),
-        io.nl(!IO)
+        MaybeLine = ok(Line),
+        cons_as_int(Line, [], Numbers)
     ;
-        PartialResult = error(Result, Error),
-        io.write(Result, !IO),
-        io.nl(!IO),
+        MaybeLine = eof,
+        Numbers = []
+    ;
+        MaybeLine = error(Error),
         io.write(Error, !IO),
-        io.nl(!IO)
+        io.nl(!IO),
+        Numbers = []
     ),
 
     % smart bruteforce search:
