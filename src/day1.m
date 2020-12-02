@@ -23,7 +23,7 @@ Test case:
 :- pred main(io::di, io::uo) is det.
 
 :- implementation.
-:- import_module string, int, list, stream, char.
+:- import_module string, int, list, stream, char, pair, solutions.
 
 :- pred cons_as_int(string::in, list(int)::in, list(int)::out) is det.
 cons_as_int(Line, !Accu) :-
@@ -61,5 +61,15 @@ main(!IO) :-
     sort(Desc, UnsortedNumbers, Numbers),
 
     % - for each from start to end, start summing from end to start, and bail when exceeding 2020
-    io.write(Numbers, !IO),
-    io.nl(!IO).
+    % or, y'know, we can just prolog it.
+    solutions((pred(X - Y :: out) is nondet :-
+        member(X, Numbers),
+        member(Y, Numbers),
+        X + Y = 2020), Pairs `with_type` list(pair(int))),
+    (
+        [ X - Y | _ ] = Pairs,
+        io.format("Since %d + %d = %d, the answer to part 1 is that %d * %d = %d.\n", [i(X), i(Y), i(X + Y), i(X), i(Y), i(X * Y)], !IO)
+    ;
+        [] = Pairs,
+        io.write_line("No answer found!", !IO)
+    ).
