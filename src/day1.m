@@ -30,25 +30,29 @@ cons_as_int(Line, Accu0, Accu) :-
     Num = string.det_to_int(strip(Line)),
     Accu = [Num | Accu0].
 
-:- pred char_list_cons(char::in, list(char)::in, list(char)::out) is det.
-char_list_cons(X, Xs, [ X | Xs ]).
-
-main(!IO) :-
-    % read stdin, one number per line, into a list.
-    Stream = io.stdin_stream `with_type` io.input_stream,
+% XXX: There should be some way to do this using a fold, rather than manually.
+% And since we have the slurp the whole array in, there's probably a better way to parse out whitespace-separated stuff, too. Ah well.
+:- pred cons_lines_as_ints(input_stream::in, list(int)::in, list(int)::out, io::di, io::uo) is det.
+cons_lines_as_ints(Stream, Accu0, Accu, !IO) :-
     read_line_as_string(Stream, MaybeLine, !IO),
     (
         MaybeLine = ok(Line),
-        cons_as_int(Line, [], Numbers)
+        cons_as_int(Line, Accu0, Accu1),
+        cons_lines_as_ints(Stream, Accu1, Accu, !IO)
     ;
         MaybeLine = eof,
-        Numbers = []
+        Accu = Accu0
     ;
         MaybeLine = error(Error),
         io.write(Error, !IO),
         io.nl(!IO),
-        Numbers = []
-    ),
+        Accu = Accu0
+    ).
+
+main(!IO) :-
+    % read stdin, one number per line, into a list.
+    Stream = io.stdin_stream `with_type` io.input_stream,
+    cons_lines_as_ints(Stream, [], Numbers, !IO),
 
     % smart bruteforce search:
     % - sort the array large => small
