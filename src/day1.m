@@ -49,6 +49,9 @@ cons_lines_as_ints(Stream, !Accu, !IO) :-
         !:Accu = !.Accu
     ).
 
+:- func format_triple_answer({int, int, int}) = string.
+format_triple_answer({X, Y, Z}) = string.format("%d*%d*%d = %d", [i(X), i(Y), i(Z), i(X*Y*Z)]) : string.
+
 main(!IO) :-
     % read stdin, one number per line, into a list.
     Stream = io.stdin_stream `with_type` io.input_stream,
@@ -72,4 +75,14 @@ main(!IO) :-
     ;
         [] = Pairs,
         io.write_line("No answer found!", !IO)
-    ).
+    ),
+
+    solutions((pred({X, Y, Z} :: out) is nondet :-
+        member(X, Numbers),
+        member(Y, Numbers),
+        member(Z, Numbers),
+        X + Y + Z = 2020), Triples `with_type` list({int, int, int})),
+    io.print_line("Part 2:", !IO),
+    Part2Answers = map(format_triple_answer, Triples),
+    io.write(Part2Answers, !IO),
+    io.nl(!IO).
