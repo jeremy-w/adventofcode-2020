@@ -5,7 +5,7 @@
 :- pred main(io::di, io::uo) is det.
 
 :- implementation.
-:- import_module require, string, char, list, maybe.
+:- import_module require, string, char, list, maybe, int.
 
 :- pred is_newline(char::in) is semidet.
 is_newline('\n').
@@ -15,7 +15,7 @@ is_newline('\r').
     ---> policy(
         min::int,
         max::int,
-        c::string
+        c::char
     ).
 
 :- type entry
@@ -24,10 +24,18 @@ is_newline('\r').
         password::string
     ).
 
+:- pred is_valid(entry::in) is semidet.
+is_valid(entry(policy(Min, Max, C), Password)) :-
+    string.to_char_list(Password, Letters),
+    list.filter(unify(C), Letters, ControlledLetters),
+    Count = list.length(ControlledLetters),
+    Count >= Min,
+    Count =< Max.
+
 :- func string_to_policy(string) = policy is semidet.
 string_to_policy(String) = Policy :-
-    [Range, C] = string.split_at_char(' ', String),
-    string.length(C) = 1,
+    [Range, CStr] = string.split_at_char(' ', String),
+    string.first_char(CStr, C, _),
     [Min, Max] = map(det_to_int, string.split_at_char('-', Range)),
     policy(Min, Max, C) = Policy.
 
@@ -45,7 +53,8 @@ main(!IO) :-
         Lines = string.words_separator(is_newline, Input),
         Entries = list.filter_map(line_to_entry, Lines),
         io.format("Have %d entries.\n", [i(list.length(Entries))], !IO),
-        io.write(Entries, !IO)
+        ValidEntries = list.filter(is_valid, Entries),
+        io.format("Part 1 Answer: Have %d valid entries.\n", [i(list.length(ValidEntries))], !IO)
     else
         error("whoopsy")
     ).
