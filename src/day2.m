@@ -43,7 +43,7 @@ string_to_policy(String) = Policy :-
 line_to_entry(Line) = Entry :-
     [PolicyPart, Password] = string.split_at_char(':', Line),
     Policy = string_to_policy(PolicyPart),
-    entry(Policy, Password) = Entry.
+    entry(Policy, string.strip(Password)) = Entry.
 
 main(!IO) :-
     io.read_file_as_string(Result, !IO),
