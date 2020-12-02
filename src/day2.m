@@ -32,6 +32,15 @@ is_valid(entry(policy(Min, Max, C), Password)) :-
     Count >= Min,
     Count =< Max.
 
+:- pred is_valid_per_part2(entry::in) is semidet.
+is_valid_per_part2(entry(policy(Min, Max, C), Password)) :-
+    string.to_char_list(Password, Letters),
+    list.index1(Letters, Min, First),
+    list.index1(Letters, Max, Second),
+    ( First = C, not Second = C
+    ; Second = C, not First = C
+    ).
+
 :- func string_to_policy(string) = policy is semidet.
 string_to_policy(String) = Policy :-
     [Range, CStr] = string.split_at_char(' ', String),
@@ -54,7 +63,9 @@ main(!IO) :-
         Entries = list.filter_map(line_to_entry, Lines),
         io.format("Have %d entries.\n", [i(list.length(Entries))], !IO),
         ValidEntries = list.filter(is_valid, Entries),
-        io.format("Part 1 Answer: Have %d valid entries.\n", [i(list.length(ValidEntries))], !IO)
+        io.format("Part 1 Answer: Have %d valid entries.\n", [i(list.length(ValidEntries))], !IO),
+        ValidPart2Entries = list.filter(is_valid_per_part2, Entries),
+        io.format("Part 2 Answer: Have %d valid entries.\n", [i(list.length(ValidPart2Entries))], !IO)
     else
         error("whoopsy")
     ).
