@@ -39,14 +39,17 @@ main(!IO) :-
     stream.name(Stream, Name, !IO),
     Numbers = [1, 2, 3, 4],
     stream.input_stream_fold(Stream, char_list_cons, [], PartialResult, !IO),
-    % (
-    %     PartialResult = ok(Result),
-    %     io.write(Result, !IO),
-    %     io.nl(!IO)
-    % ;
-        io.write(PartialResult, !IO),
+    (
+        PartialResult = ok(Result),
+        io.write(Result, !IO),
+        io.nl(!IO)
+    ;
+        PartialResult = error(Result, Error),
+        io.write(Result, !IO),
         io.nl(!IO),
-    % ),
+        io.write(Error, !IO),
+        io.nl(!IO)
+    ),
 
     % smart bruteforce search:
     % - sort the array large => small
