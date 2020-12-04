@@ -43,8 +43,10 @@ tile_at(Panel, Row, Col, TreeOrSnowOrDone) :-
         if Row > length(Panel)
         then TreeOrSnowOrDone = done
         else
-            EffectiveCol = Col rem length(det_head(Panel)),
+            EffectiveCol = (Col - 1) rem (length(det_head(Panel))) + 1,
+            trace [io(!IO), runtime(env("TRACE"))] (io.print("Col-EffCol: ", !IO), io.write_line(pair(Col, EffectiveCol), !IO)),
             RowCols = det_index1(Panel, Row),
+            trace [io(!IO), runtime(env("TRACE"))] (io.write_line(RowCols, !IO)),
             TreeOrSnowOrDone = det_index1(RowCols, EffectiveCol)
     ).
 
@@ -52,7 +54,7 @@ tile_at(Panel, Row, Col, TreeOrSnowOrDone) :-
 indexes_along(Panel, motion(RightBy, DownBy)) = Indexes :-
     Indexes = list.series(1 - 1, AtOrPastBottom, NextIndex),
     AtOrPastBottom = (pred((R - _)::in) is semidet :- trace [io(!IO), runtime(env("TRACE"))] (io.format("R = %d, length(Panel) = %d\n", [i(R), i(length(Panel))], !IO)), R > 0, R =< length(Panel)),
-    NextIndex = (func(R - C) = pair(R + DownBy, C + RightBy)).
+    NextIndex = (func(R - C) = Next :- trace [io(!IO), runtime(env("TRACE"))] (io.write_line(pair(R, C), !IO)), pair(R + DownBy, C + RightBy) = Next).
 
 :- func path_along(panel, motion) = list(char).
 path_along(Panel, Motion) = Path :-
@@ -63,12 +65,20 @@ path_along(Panel, Motion) = Path :-
 
 main(!IO) :-
     part1_test(!IO),
-    io.print_line("howdy", !IO).
+    io.read_file_as_string(MaybeInput, !IO),
+    (if ok(Input) = MaybeInput
+    then
+        TreeCount = part1(Input),
+        io.format("Part 1: TreeCount = %d", [i(TreeCount)], !IO), io.nl(!IO)
+    else
+        unexpected($module, $pred, "failed to read stdin")
+    ).
 
 :- func part1(string) = int is det.
 part1(Input) = TreeCount :-
-    % TODO: Implement.
-    TreeCount = 0.
+    Panel = panel_from_string(Input),
+    Path = path_along(Panel, motion(3, 1)),
+    TreeCount = length(filter(unify(tree), Path)).
 
 :- pred part1_test(io.io::di, io.io::uo) is det.
 part1_test(!IO) :-
@@ -96,7 +106,7 @@ part1_test(!IO) :-
         else io.print("not ok - tiny panel from string gave", !IO), io.write(TinyPanelActual, !IO), io.print(", expected ", !IO), io.write(TinyPanelExpected, !IO), io.nl(!IO)
     ),
 
-     tile_at(TinyPanelExpected, 2, 3, TinyIndexActual),
+     tile_at(TinyPanelExpected, 2, 2, TinyIndexActual),
     (
         if TinyIndexActual = tree
         then io.print_line("ok - tiny panel indexing", !IO)
@@ -124,7 +134,6 @@ part1_test(!IO) :-
     Expected = 7,
     Answer = part1(Input),
     (if Answer = Expected
-    then io.print_line("ok - part1", !IO)
-    else io.format("not ok - part1 gave %d, expected %d\n", [i(Answer), i(Expected)], !IO)
+    then io.print_line("ok - part1 example", !IO)
+    else io.format("not ok - part1 exmple gave %d, expected %d\n", [i(Answer), i(Expected)], !IO)
     ).
-    %path_along(Input, motion(3, 1))
