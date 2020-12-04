@@ -5,7 +5,7 @@
 :- pred main(io::di, io::uo) is det.
 
 :- implementation.
-:- import_module string, char, list, require, util, pair, int.
+:- import_module string, char, list, require, util, pair, int, bool.
 
 main(!IO) :-
     test_example(!IO),
@@ -14,7 +14,11 @@ main(!IO) :-
     Passports = map(passport_from_string, PassportBlocks),
     filter(passport_is_valid, Passports, ActualValids),
     io.format("Part 1: Valid count: %d\n", [i(length(ActualValids))], !IO),
+
+    test_part2(!IO),
+
     filter(passport_values_are_valid, Passports, TrulyValid),
+    % io.write_line(TrulyValid, !IO),
     io.format("Part 2: Valid count: %d\n", [i(length(TrulyValid))], !IO).
 
 %----%
@@ -117,3 +121,40 @@ test_example(!IO) :-
         io.write("Expected: ", !IO),
         io.write_line(ExpectedValids, !IO)
     ).
+
+%---%
+
+:- pred fok(string::in, string::in, bool::in, io::di, io::uo) is det.
+fok(Key, Value, Expected, !IO) :-
+    if is_valid_field([Key, Value])
+    then
+        (Expected = yes
+        ;
+        Expected = no,
+        io.format("failed %s:%s - expected valid, reported invalid", [s(Key), s(Value)], !IO)
+        )
+    else
+        (Expected = yes,
+        io.format("failed %s:%s - expected invalid, reported valid", [s(Key), s(Value)], !IO)
+        ;
+        Expected = no
+        ).
+
+:- pred test_part2(io::di, io::uo) is det.
+test_part2(!IO) :-
+    fok("byr", "2002", yes, !IO),
+    fok("byr", "2003", no, !IO),
+    fok("hgt"   , "60in", yes, !IO),
+    fok("hgt"   , "190cm", yes, !IO),
+    fok("hgt" , "190in", no, !IO),
+    fok("hgt" , "190", no, !IO),
+
+    fok("hcl"    ,"#123abc", yes, !IO),
+    fok("hcl"  ,"#123abz", no, !IO),
+    fok("hcl" , "123abc", no, !IO),
+
+    fok("ecl"   , "brn", yes, !IO),
+    fok("ecl" , "wat", no, !IO),
+
+    fok("pid"   , "000000001", yes, !IO),
+    fok("pid" , "0123456789", no, !IO).
