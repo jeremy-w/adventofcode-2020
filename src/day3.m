@@ -71,7 +71,9 @@ main(!IO) :-
     then
         Panel = panel_from_string(Input),
         TreeCount = part1(Panel),
-        io.format("Part 1: TreeCount = %d", [i(TreeCount)], !IO), io.nl(!IO)
+        io.format("Part 1: TreeCount = %d", [i(TreeCount)], !IO), io.nl(!IO),
+        ProdCounts = part2(Panel),
+        io.format("Part2: ProdCounts = %d\n", [i(ProdCounts)], !IO)
     else
         unexpected($module, $pred, "failed to read stdin")
     ).
@@ -168,5 +170,13 @@ part1_test(!IO) :-
 part2_test(!IO) :-
     io.print_line("# BEGIN part 2 tests", !IO),
     ExamplePanel = panel_from_string(exampleInput),
-    ExpectedTreeCounts = [2, 7, 3, 4, 2].
-    % ActualTreeCounts : list(int) = map(part1(ExamplePanel), allSlopes).
+    ExpectedTreeCounts = [2, 7, 3, 4, 2],
+    ActualTreeCounts : list(int) = map(treeCountOfSlope(ExamplePanel), allSlopes),
+    (if
+        ExpectedTreeCounts = ActualTreeCounts
+    then
+        io.print_line("ok - tree counts on all slopes", !IO)
+    else
+        io.print_line("not ok - tree counts on all slopes - given ", !IO), io.write(ActualTreeCounts, !IO),
+        io.print(" expected ", !IO), io.write_line(ExpectedTreeCounts, !IO)
+    ).
