@@ -5,7 +5,7 @@
 :- pred main(io::di, io::uo) is det.
 
 :- implementation.
-:- import_module list, string, char, int, require.
+:- import_module list, string, char, int, require, pair.
 
 :- func tree = char.
 tree = '#'.
@@ -48,9 +48,18 @@ tile_at(Panel, Row, Col, TreeOrSnowOrDone) :-
             TreeOrSnowOrDone = det_index1(RowCols, EffectiveCol)
     ).
 
+:- func indexes_along(panel, motion) = list(pair(int, int)).
+indexes_along(Panel, motion(RightBy, DownBy)) = Indexes :-
+    Indexes = list.series(1 - 1, AtOrPastBottom, NextIndex),
+    AtOrPastBottom = (pred((R - _)::in) is semidet :- trace [io(!IO), runtime(env("TRACE"))] (io.format("R = %d, length(Panel) = %d\n", [i(R), i(length(Panel))], !IO)), R > 0, R =< length(Panel)),
+    NextIndex = (func(R - C) = pair(R + DownBy, C + RightBy)).
+
 :- func path_along(panel, motion) = list(char).
-path_along(Panel, motion(RightBy, DownBy)) = Path :-
-    sorry($module, $pred).
+path_along(Panel, Motion) = Path :-
+    Indexes = indexes_along(Panel, Motion),
+    Path = list.map((func(Pair) = Result is det :-
+            tile_at(Panel, Pair^fst, Pair^snd, Result)
+        ), Indexes).
 
 main(!IO) :-
     part1_test(!IO),
@@ -84,7 +93,7 @@ part1_test(!IO) :-
     (
         if TinyPanelActual = TinyPanelExpected
         then io.print_line("ok - tiny panel from string", !IO)
-        else io.write_line("not ok - tiny panel from string gave", !IO), io.write(TinyPanelActual, !IO), io.write(", expected ", !IO), io.write(TinyPanelExpected, !IO), io.nl(!IO)
+        else io.print("not ok - tiny panel from string gave", !IO), io.write(TinyPanelActual, !IO), io.print(", expected ", !IO), io.write(TinyPanelExpected, !IO), io.nl(!IO)
     ),
 
      tile_at(TinyPanelExpected, 2, 3, TinyIndexActual),
@@ -95,6 +104,14 @@ part1_test(!IO) :-
     ),
 
     % OK, the basics are probably working!
+    StraightDownIndexesExpected = [1-1, 2-1],
+    StraightDownIndexesActual = indexes_along(TinyPanelActual, motion(0, 1)),
+    (
+        if StraightDownIndexesActual = StraightDownIndexesExpected
+        then io.print_line("ok - straight down indexes", !IO)
+        else io.print("not ok - straight down indexes gave ", !IO), io.write(StraightDownIndexesActual, !IO), io.print(", expected ", !IO), io.write_line(StraightDownIndexesExpected, !IO)
+    ),
+
     Panel = panel_from_string(Input),
     StraightDownExpected = to_char_list(".#......##."),
     StraightDownActual = path_along(Panel, motion(0, 1)),
