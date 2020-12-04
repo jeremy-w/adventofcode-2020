@@ -94,6 +94,8 @@ is_valid_field(["pid", S]) :-
     length(S) = 9,
     is_all_digits(S).
 
+is_valid_field(["cid", _]).
+
 :- pred passport_values_are_valid(passport::in) is semidet.
 passport_values_are_valid(Passport) :-
     passport_is_valid(Passport),
