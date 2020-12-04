@@ -9,7 +9,11 @@
 
 main(!IO) :-
     test_example(!IO),
-    io.print_line("it builds", !IO).
+    util.read_file_as_string("../input/day4.txt", Input, !IO),
+    PassportBlocks = split_at_string("\n\n", Input),
+    Passports = map(passport_from_string, PassportBlocks),
+    filter(passport_is_valid, Passports, ActualValids),
+    io.format("Part 1: Valid count: %d\n", [i(length(ActualValids))], !IO).
 
 %----%
 %----%
