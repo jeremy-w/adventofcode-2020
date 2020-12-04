@@ -65,24 +65,45 @@ path_along(Panel, Motion) = Path :-
 
 main(!IO) :-
     part1_test(!IO),
+    part2_test(!IO),
     io.read_file_as_string(MaybeInput, !IO),
     (if ok(Input) = MaybeInput
     then
-        TreeCount = part1(Input),
+        Panel = panel_from_string(Input),
+        TreeCount = part1(Panel),
         io.format("Part 1: TreeCount = %d", [i(TreeCount)], !IO), io.nl(!IO)
     else
         unexpected($module, $pred, "failed to read stdin")
     ).
 
-:- func part1(string) = int is det.
-part1(Input) = TreeCount :-
-    Panel = panel_from_string(Input),
-    Path = path_along(Panel, motion(3, 1)),
+%---%
+%---%
+
+:- func part1(panel) = int is det.
+part1(Panel) = TreeCount :-
+    TreeCount = treeCountOfSlope(Panel, motion(3, 1)).
+
+:- func allSlopes = list(motion).
+allSlopes = [
+    motion(1, 1),
+    motion(3, 1),
+    motion(5, 1),
+    motion(7, 1),
+    motion(1, 2)
+].
+
+:- func treeCountOfSlope(panel, motion) = int.
+treeCountOfSlope(Panel, Motion) = TreeCount :-
+    Path = path_along(Panel, Motion),
     TreeCount = length(filter(unify(tree), Path)).
 
-:- pred part1_test(io.io::di, io.io::uo) is det.
-part1_test(!IO) :-
-    Input =
+:- func part2(panel) = int.
+part2(Panel) = foldl(times, map(treeCountOfSlope(Panel), allSlopes), 1).
+
+%----%
+
+:- func exampleInput = string.
+exampleInput =
         "..##.......\n" ++
         "#...#...#..\n" ++
         ".#....#..#.\n" ++
@@ -93,7 +114,10 @@ part1_test(!IO) :-
         ".#........#\n" ++
         "#.##...#...\n" ++
         "#...##....#\n" ++
-        ".#..#...#.#\n",
+        ".#..#...#.#\n".
+
+:- pred part1_test(io.io::di, io.io::uo) is det.
+part1_test(!IO) :-
     io.print_line("# BEGIN part 1 test", !IO),
 
     TinyPanel = ".#\n" ++
@@ -122,7 +146,7 @@ part1_test(!IO) :-
         else io.print("not ok - straight down indexes gave ", !IO), io.write(StraightDownIndexesActual, !IO), io.print(", expected ", !IO), io.write_line(StraightDownIndexesExpected, !IO)
     ),
 
-    Panel = panel_from_string(Input),
+    Panel = panel_from_string(exampleInput),
     StraightDownExpected = to_char_list(".#......##."),
     StraightDownActual = path_along(Panel, motion(0, 1)),
     (
@@ -132,8 +156,17 @@ part1_test(!IO) :-
     ),
 
     Expected = 7,
-    Answer = part1(Input),
+    Answer = part1(Panel),
     (if Answer = Expected
     then io.print_line("ok - part1 example", !IO)
     else io.format("not ok - part1 exmple gave %d, expected %d\n", [i(Answer), i(Expected)], !IO)
     ).
+
+%----%
+
+:- pred part2_test(io.state::di, io.state::uo) is det.
+part2_test(!IO) :-
+    io.print_line("# BEGIN part 2 tests", !IO),
+    ExamplePanel = panel_from_string(exampleInput),
+    ExpectedTreeCounts = [2, 7, 3, 4, 2].
+    % ActualTreeCounts : list(int) = map(part1(ExamplePanel), allSlopes).
