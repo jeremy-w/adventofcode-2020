@@ -18,6 +18,9 @@ snow = det_from_int(0'.).  %' Syntax highlighting does not handle character lite
 TODO: Ask in mercury-users list.
 */
 
+:- func done = char.
+done = 'D'.
+
 :- type panel == list(list(char)).
 
 :- type motion
@@ -29,9 +32,24 @@ panel_from_string(Input) = Panel :-
     Panel = list.map(string.to_char_list, Strings).
 
 % Uses base-1 indexing, so upper-left corner is row 1, col 1.
-% Columns are infinite (we tile the panel horizontally). Access fails if row < 1 or row > length(panel).
+% Columns are infinite (we tile the panel horizontally). Access fails if row < 1 or col < 1.
 :- pred tile_at(panel::in, int::in, int::in, char::out) is det.
-tile_at(Panel, Row, Col, TreeOrSnow) :-
+tile_at(Panel, Row, Col, TreeOrSnowOrDone) :-
+    require(
+        Row > 0, string.format("Row must be > 0, but given %i", [i(Row)])
+    ),
+    require(Col > 0, string.format("Col must be >0, bu given %d", [i(Col)])),
+    (
+        if Row > length(Panel)
+        then TreeOrSnowOrDone = done
+        else
+            EffectiveCol = Col rem length(det_head(Panel)),
+            RowCols = det_index1(Panel, Row),
+            TreeOrSnowOrDone = det_index1(RowCols, EffectiveCol)
+    ).
+
+:- func path_along(panel, motion) = list(char).
+path_along(Panel, motion(RightBy, DownBy)) = Path :-
     sorry($module, $pred).
 
 main(!IO) :-
@@ -73,16 +91,18 @@ part1_test(!IO) :-
     (
         if TinyIndexActual = tree
         then io.print_line("ok - tiny panel indexing", !IO)
-        else io.format("not ok - tiny panel indexing gave %c but expected %c", [c(TinyIndexActual), c(tree)], !IO)
+        else io.format("not ok - tiny panel indexing gave %c but expected %c.\n", [c(TinyIndexActual), c(tree)], !IO)
     ),
 
-    % StraightDownExpected = ".#......##.",
-    % StraightDownActual = path_along(Panel, motion(0, 1)),
-    % (
-    %     if StraightDownActual = StraightDownExpected
-    %     then io.print_line("ok - straight down", !IO)
-    %     else io.format("not ok - straight down gave %s, expected %s", [s(StraightDownActual), s(StraightDownExpected)], !IO)
-    % ),
+    % OK, the basics are probably working!
+    Panel = panel_from_string(Input),
+    StraightDownExpected = to_char_list(".#......##."),
+    StraightDownActual = path_along(Panel, motion(0, 1)),
+    (
+        if StraightDownActual = StraightDownExpected
+        then io.print_line("ok - straight down", !IO)
+        else io.format("not ok - straight down gave %s, expected %s", [s(from_char_list(StraightDownActual)), s(from_char_list(StraightDownExpected))], !IO)
+    ),
 
     Expected = 7,
     Answer = part1(Input),
