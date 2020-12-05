@@ -1,0 +1,44 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "options": {
+        "shell": {
+            "executable": "bash",
+            "args": ["-c"],
+        }
+    },
+    "tasks": [
+        {
+            "label": "run-day",
+            "type": "process",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+              },
+            "command": "./adventofcode-2020/run-day",
+            "args": ["${file}"],
+            "problemMatcher": [
+                /*
+                Example error output:
+
+day5.m:005: Error: no determinism declaration for exported predicate `main'/2.
+day5.m:009: In clause for predicate `main'/2:
+day5.m:009:   error: wrong number of arguments (1; should be 3, 4 or 5)
+day5.m:009:   in call to predicate `io.print_line'.
+                */
+                {
+                    "owner": "mercury",
+                    "fileLocation": ["relative", "${workspaceFolder}/adventofcode-2020/src/"],
+                    "pattern": {
+                        // https://regex101.com/r/c1Tbbk/1
+                        "regexp": "^(.*.m):0*([1-9][0-9]*):[ \t]+(.*)$",
+                        "file":  1,
+                        "line": 2,
+                        "message": 3
+                    },
+                }
+            ]
+        }
+    ]
+}
