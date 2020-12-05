@@ -64,4 +64,14 @@ main(!IO) :-
     Infos = map(pass_to_info, Passes),
     SeatIDs: list(int) = sort(map(seat_id, Infos)),
     io.print("Part 1 answer: ", !IO),
-    io.write_line(det_head(reverse(SeatIDs)), !IO).
+    io.write_line(det_head(reverse(SeatIDs)), !IO),
+
+    ThisAndNext = chunk(zip(SeatIDs, det_tail(SeatIDs)), 2),
+    (if
+        find_first_match((pred([First, Second]::in) is semidet :- Second - First > 1), ThisAndNext, GapPair)
+    then
+        io.print("Part 2 answer is the seat ID between: ", !IO),
+        io.write_line(GapPair, !IO)
+    else
+        io.print_line("Part 2: failed to match!", !IO)
+    ).
