@@ -11,7 +11,7 @@
 tree = '#'.
 
 :- func snow = char.
-snow = det_from_int(0'.).  %' Syntax highlighting does not handle character literals.
+snow = det_from_int(0'.).  %' Syntax highlighting now handles character literals!
 /* ???: If I write this using '.', then I get a compiler error:
 ../src/day3.m:013: Error: no clauses for function `snow'/0.
 ../src/day3.m:014: Syntax error at token '.': operator precedence error.
