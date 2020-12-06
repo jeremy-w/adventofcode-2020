@@ -27,6 +27,10 @@ fi
 
 cd "$DIR"
 # XXX: Homebrew's build is not compiled in any grade that supports debugging. :(
-mmc -E --use-subdirs -m day$DAY
+CFILTER="cat"
+if [[ -x $HOME/go/bin/cfilter ]]; then
+    CFILTER="$HOME/go/bin/cfilter -f ../mmc.syntax"
+fi
+mmc -E --use-subdirs -m day$DAY 2>&1 | $CFILTER
 "./day$DAY" < "../input/day$DAY.txt"
 rm "./day$DAY"

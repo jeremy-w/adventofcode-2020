@@ -1,0 +1,13 @@
+# Syntax file for legionus/cfilter.
+# Pattern format:
+# PATTERN      := '/REGULAR-EXPRESSION/ PATTERN-GROUP: [[TYPE] MODIFICATOR COLOR][, ...]'
+# TYPE         := {foreground|background} or {fg|bg}
+# COLOR        := {black|blue|green|cyan|red|magenta|yellow|white}
+# MODIFICATORS := {bold|italic|underline|inverse|bright}
+
+
+/(?P<term>`[^']*')/ term: bold underline
+/^(?P<file>[^:]+.m:)(?P<line>\d+:)/ file: cyan, line: bright
+/(?P<issue>warning:?)/ issue: yellow
+/(?P<issue>(?:mode )?error:?)/ issue: red
+/^/
