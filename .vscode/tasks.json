@@ -16,7 +16,7 @@
                 "kind": "build",
                 "isDefault": true
               },
-            "command": "./adventofcode-2020/run-day",
+            "command": "./run-day",
             "args": ["${file}"],
             "problemMatcher": [
                 /*
@@ -29,7 +29,7 @@ day5.m:009:   in call to predicate `io.print_line'.
                 */
                 {
                     "owner": "mercury",
-                    "fileLocation": ["relative", "${workspaceFolder}/adventofcode-2020/src/"],
+                    "fileLocation": ["relative", "${workspaceFolder}/src/"],
                     "pattern": {
                         // https://regex101.com/r/c1Tbbk/1
                         "regexp": "^(.*.m):0*([1-9][0-9]*):[ \t]+(.*)$",
