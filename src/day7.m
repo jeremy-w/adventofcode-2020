@@ -69,6 +69,7 @@ part1(BagToHold, RuleText) = ColorCount :-
     {_, ContainedBy} = Maps,
     ColorCount = length(reaches(ContainedBy, BagToHold)).
 
+:- pragma memo(reaches/2).
 % Returns the colors that contain the color.
 :- func reaches(contained_by_map, string) = list(string).
 reaches(M, Color) = Colors :-
@@ -99,6 +100,7 @@ part2(BagToHold, RuleText) = BagCount :-
     {Contains, _} = Maps,
     BagCount = held(Contains, BagToHold).
 
+:- pragma memo(held/2).
 :- func held(contains_map, string) = int.
 held(M, Holder) = Sum :-
     trace [io(!IO)] (io.format("how many bags are held by %s?\n", [s(Holder)], !IO)),
@@ -106,7 +108,7 @@ held(M, Holder) = Sum :-
         search(M, Holder, Seeds)
      then
         trace [io(!IO)] (io.format("%s depends on", [s(Holder)], !IO), io.write_line(Seeds, !IO)),
-        SeedCount = map((func({N, C}) = N), Seeds),
+        SeedCount = map((func({N, _C}) = N), Seeds),
         Held = map((func({N, C}) = N * held(M, C)), Seeds),
         Sum = foldl(plus, SeedCount ++ Held, 0)
      else
