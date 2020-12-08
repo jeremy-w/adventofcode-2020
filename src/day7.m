@@ -18,9 +18,15 @@ my_bag = "shiny gold".
 main(!IO) :-
     TestCount = part1(my_bag, example_rules),
     io.format("Part1 Test: Expected 4, found %d\n", [i(TestCount)], !IO),
+
     util.read_file_as_string("../input/day7.txt", Input, !IO),
     Part1Count = part1(my_bag, Input),
-    io.format("Part1 Answer: %d\n", [i(Part1Count)], !IO).
+    io.format("Part1 Answer: %d\n", [i(Part1Count)], !IO),
+
+    Test2Count = part2(my_bag, example2),
+    io.format("Part2 Test: Expected 126, found %d\n", [i(Test2Count)], !IO),
+    Part2Count = part2(my_bag, Input),
+    io.format("Part2 Answer: %d\n", [i(Part2Count)], !IO).
 
 :- func example_rules = string.
 example_rules = "light red bags contain 1 bright white bag, 2 muted yellow bags.
@@ -53,14 +59,14 @@ parse_rule(Line) = Items :-
     not Items = [].
 
 :- func parse_count_color(list(string)) = {int, string} is semidet.
-parse_count_color([Count, Adj, Color, Bags]) = Result :-
+parse_count_color([Count, Adj, Color, _Bags]) = Result :-
     string.to_int(Count, N),
     Result = {N, string.format("%s %s", [s(Adj), s(Color)])}.
 
 :- func part1(string, string) = int.
 part1(BagToHold, RuleText) = ColorCount :-
     Maps = compile_rules(RuleText),
-    {Contains, ContainedBy} = Maps,
+    {_, ContainedBy} = Maps,
     ColorCount = length(reaches(ContainedBy, BagToHold)).
 
 % Returns the colors that contain the color.
@@ -70,9 +76,40 @@ reaches(M, Color) = Colors :-
     (if
         search(M, Color, Match)
     then
-        Seed = map((func({C, N}) = C), Match),
+        Seed = map((func({C, _N}) = C), Match),
         Reaches = Seed ++ condense(map(reaches(M), Seed)),
         Colors = remove_adjacent_dups(sort(Reaches)),
         trace [io(!IO), runtime(env("TRACE_REACHES"))] (io.format("reaching Color=%s: ", [s(Color)], !IO), io.write_line(Colors, !IO))
     else
         Colors = []).
+
+%---%
+:- func example2 = string.
+example2 = "shiny gold bags contain 2 dark red bags.
+dark red bags contain 2 dark orange bags.
+dark orange bags contain 2 dark yellow bags.
+dark yellow bags contain 2 dark green bags.
+dark green bags contain 2 dark blue bags.
+dark blue bags contain 2 dark violet bags.
+dark violet bags contain no other bags.".
+
+:- func part2(string, string) = int.
+part2(BagToHold, RuleText) = BagCount :-
+    Maps = compile_rules(RuleText),
+    {Contains, _} = Maps,
+    BagCount = held(Contains, BagToHold).
+
+:- func held(contains_map, string) = int.
+held(M, Holder) = Sum :-
+    trace [io(!IO)] (io.format("how many bags are held by %s?\n", [s(Holder)], !IO)),
+    (if
+        search(M, Holder, Seeds)
+     then
+        trace [io(!IO)] (io.format("%s depends on", [s(Holder)], !IO), io.write_line(Seeds, !IO)),
+        SeedCount = map((func({N, C}) = N), Seeds),
+        Held = map((func({N, C}) = N * held(M, C)), Seeds),
+        Sum = foldl(plus, SeedCount ++ Held, 0)
+     else
+         Sum = 0
+    ),
+    trace [io(!IO)] (io.format("%s holds %d\n", [s(Holder), i(Sum)], !IO)).
