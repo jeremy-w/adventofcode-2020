@@ -77,7 +77,8 @@ not_a_repeat(M, !State) :-
 
 :- pred run_while(pred(machine, A, A)::in(pred(in, in, out) is semidet), machine::in, machine::out, A::in, A::out) is det.
 run_while(ShouldContinue, !Machine, !Accu) :-
-    (if ShouldContinue(!.Machine, !Accu)
+    (if !.Machine^ip < length(!.Machine^code),
+        ShouldContinue(!.Machine, !Accu)
     then
         step(!Machine),
         run_while(ShouldContinue, !Machine, !Accu)
