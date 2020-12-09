@@ -38,6 +38,15 @@ part1(BootCode) = PreRepeatAccValue :-
     run_while(not_a_repeat, InitialMachine, FinalMachine, [], _),
     PreRepeatAccValue = FinalMachine ^ acc.
 
+% Fails when execution would repeat an instruction.
+:- pred not_a_repeat(machine::in, list(int)::in, list(int)::out) is semidet.
+not_a_repeat(M, !State) :-
+    trace [io(!IO), runtime(env("TRACE_REPEAT"))] (io.write_line(!.State, !IO)),
+    not member(M ^ ip, !.State),
+    trace [io(!IO), runtime(env("TRACE_REPEAT"))] (io.print_line("continuing execution - not a repeat", !IO)),
+    cons(M^ip, !State).
+
+%---%
 :- type boot_code == list(instruction).
 :- type instruction ---> instruction(cmd :: command, arg :: int).
 :- type command
@@ -66,14 +75,6 @@ instruction_from_string(Line) = Insn :-
 command_from_string("acc") = acc.
 command_from_string("jmp") = jmp.
 command_from_string("nop") = nop.
-
-% Fails when execution would repeat an instruction.
-:- pred not_a_repeat(machine::in, list(int)::in, list(int)::out) is semidet.
-not_a_repeat(M, !State) :-
-    trace [io(!IO), runtime(env("TRACE_REPEAT"))] (io.write_line(!.State, !IO)),
-    not member(M ^ ip, !.State),
-    trace [io(!IO), runtime(env("TRACE_REPEAT"))] (io.print_line("continuing execution - not a repeat", !IO)),
-    cons(M^ip, !State).
 
 :- pred run_while(pred(machine, A, A)::in(pred(in, in, out) is semidet), machine::in, machine::out, A::in, A::out) is det.
 run_while(ShouldContinue, !Machine, !Accu) :-
