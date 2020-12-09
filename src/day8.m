@@ -35,7 +35,8 @@ acc +6
 :- func part1(boot_code) = int.
 part1(BootCode) = PreRepeatAccValue :-
     InitialMachine = init(BootCode),
-    run_while(not_a_repeat, InitialMachine, FinalMachine, [], _),
+    run_while(not_a_repeat, InitialMachine, FinalMachine, [], _VisitedList),
+    % trace [io(!IO)] (sort(VisitedList, V), io.write_line(V, !IO)),
     PreRepeatAccValue = FinalMachine ^ acc.
 
 % Fails when execution would repeat an instruction.
@@ -47,6 +48,31 @@ not_a_repeat(M, !State) :-
     cons(M^ip, !State).
 
 %---%
+
+% Fix the program so that it terminates normally by changing exactly one jmp (to nop) or nop (to jmp).
+% What is the value of the accumulator after the program terminates?
+:- func part2(boot_code) = int.
+part2(BootCode) = TerminalValue :-
+    BootCodes = mutate(BootCode),
+    (if
+        find_first_match(machine_terminates, BootCodes, TerminatingBootCode)
+    then
+        InitialMachine = init(TerminatingBootCode),
+        run_while(not_a_repeat, InitialMachine, FinalMachine, [], _VisitedList),
+        % trace [io(!IO)] (sort(_VisitedList, V), io.write_line(V, !IO)),
+        TerminalValue = FinalMachine^acc
+    else
+        TerminalValue = -1
+    ).
+
+:- pred machine_terminates(boot_code::in) is semidet.
+machine_terminates(_) :- semidet_succeed.
+
+:- func mutate(boot_code) = list(boot_code).
+mutate(BaseCode) = [BaseCode].
+
+%---%
+
 :- type boot_code == list(instruction).
 :- type instruction ---> instruction(cmd :: command, arg :: int).
 :- type command
