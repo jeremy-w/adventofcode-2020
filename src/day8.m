@@ -5,6 +5,7 @@
 
 :- implementation.
 :- import_module char, int, list, string, util.
+:- import_module solutions.
 
 main(!IO) :-
     % Test: Part 1
@@ -17,7 +18,15 @@ main(!IO) :-
     util.read_file_as_string("../input/day8.txt", Input, !IO),
     BootCode = boot_code_from_string(Input),
     P1Result = part1(BootCode),
-    io.format("P1: got %d\n", [i(P1Result)], !IO).
+    io.format("P1: got %d\n", [i(P1Result)], !IO),
+
+    % Test: Part 2
+    Expected2 = 8,
+    Actual2 = part2(BootCode1),
+    io.format("P2 test: expected %d, got %d\n", [i(Expected2), i(Actual2)], !IO),
+
+    P2Result = part2(BootCode),
+    io.format("P2: got %d\n", [i(P2Result)], !IO).
 
 :- func example1 = string.
 example1 = "nop +0
@@ -66,10 +75,20 @@ part2(BootCode) = TerminalValue :-
     ).
 
 :- pred machine_terminates(boot_code::in) is semidet.
-machine_terminates(_) :- semidet_succeed.
+machine_terminates(BootCode) :-
+    run_while(not_a_repeat, init(BootCode), FinalMachine, [], _),
+    FinalMachine^ip = length(BootCode).
 
 :- func mutate(boot_code) = list(boot_code).
-mutate(BaseCode) = [BaseCode].
+mutate(BaseCode) = Mutants :-
+    solutions((pred(Mutant::out) is nondet :-
+        swap_nop_jmp(BaseCode, Mutant)), Mutants).
+
+:- pred swap_nop_jmp(boot_code::in, boot_code::out) is nondet.
+swap_nop_jmp([instruction(nop, N) | Rest], [instruction(jmp, N) | Rest]).
+swap_nop_jmp([instruction(jmp, N) | Rest], [instruction(nop, N) | Rest]).
+swap_nop_jmp([I | Rest0], [I | Rest]) :-
+    swap_nop_jmp(Rest0, Rest).
 
 %---%
 
