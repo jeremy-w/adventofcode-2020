@@ -99,14 +99,3 @@ range_summing_to(Key, Ns) = R :-
     map((pred(WindowLength::in, WindowsOfLength::out) is det :- filter_map(take(WindowLength), [Ns | tails(Ns)], WindowsOfLength)), WindowLengths, Windowses),
     condense(Windowses, Windows),
     find_first_match((pred(Window::in) is semidet :- foldl(plus, Window, 0) = Key), Windows, R).
-
-%---%
-% LIST UTILITIES
-
-:- func ints(string) = list(int).
-ints(Input) = Ns :-
-    filter_map(string.to_int, words(strip(Input)), Ns).
-
-:- func tails(list(N)) = list(list(N)).
-tails([]) = [].
-tails([_ | T]) = [T | tails(T)].
