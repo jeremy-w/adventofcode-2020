@@ -17,7 +17,12 @@ main(!IO) :-
     io.format("P1 test b: expected 22 1-jolt, 10 3-jolt, for %d, got %d\n", [i(22*10), i(part1(ints(example1b)))], !IO),
 
     util.read_file_as_string("../input/day10.txt", Input, !IO),
-    io.format("P1: got %d\n", [i(part1(ints(Input)))], !IO).
+    io.format("P1: got %d\n", [i(part1(ints(Input)))], !IO),
+
+    io.format("P2 test: expected %d, got %d\n", [i(8), i(part2(ints(example1)))], !IO),
+    % io.format("P2 test 2: expected %d, got %d\n", [i(19208), i(part2(ints(example1b)))], !IO),
+    % io.format("P2: got %d\n", [i(part2(ints(Input)))], !IO),
+    io.print_line("=== * ===", !IO).
 
 :- func example1 = string.
 example1 = "16
@@ -95,3 +100,7 @@ part1(Joltages) = ProductOf1And3Deltas :-
     OnesCountIncludingOutlet = OnesCount + 1,
     ThreesCountIncludingDevice = ThreesCount + 1,
     ProductOf1And3Deltas = OnesCountIncludingOutlet * ThreesCountIncludingDevice.
+
+:- func part2(list(int)) = int.
+part2(AdapterJoltages) = CountOfDistinctArrangements :-
+    -1 = CountOfDistinctArrangements.
