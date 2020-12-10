@@ -20,8 +20,8 @@ main(!IO) :-
     io.format("P1: got %d\n", [i(part1(ints(Input)))], !IO),
 
     io.format("P2 test: expected %d, got %d\n", [i(8), i(part2(ints(example1)))], !IO),
-    % io.format("P2 test 2: expected %d, got %d\n", [i(19208), i(part2(ints(example1b)))], !IO),
-    % io.format("P2: got %d\n", [i(part2(ints(Input)))], !IO),
+    io.format("P2 test 2: expected %d, got %d\n", [i(19208), i(part2(ints(example1b)))], !IO),
+    io.format("P2: got %d\n", [i(part2(ints(Input)))], !IO),
     io.print_line("=== * ===", !IO).
 
 :- func example1 = string.
@@ -103,4 +103,25 @@ part1(Joltages) = ProductOf1And3Deltas :-
 
 :- func part2(list(int)) = int.
 part2(AdapterJoltages) = CountOfDistinctArrangements :-
-    -1 = CountOfDistinctArrangements.
+    InOrder: list(int) = sort(AdapterJoltages),
+    AllJoltages = [0 | InOrder] ++ [det_last(InOrder) + 3],
+    arrangements_from(0, AllJoltages, CountOfDistinctArrangements).
+
+:- pragma memo(arrangements_from/3).
+:- pred arrangements_from(int::in, list(int)::in, int::out).
+arrangements_from(N, Js, Out) :-
+    trace [io(!IO), runtime(env("ARRANGE"))] (
+        io.write_line({"N", N}, !IO)
+    ),
+    Options = filter((pred(J::in) is semidet :- J - N =< 3, J > N), Js),
+    ( if is_empty(Options)
+    then
+        Out = 1
+    else
+        OptionCounts = map((func(Option) = R :-
+            arrangements_from(Option, Js, R)), Options),
+        trace [io(!IO), runtime(env("ARRANGE"))] (
+            io.write_line({"N", N, "Options", Options, "OptionCounts", OptionCounts}, !IO)
+        ),
+        Out = foldl(plus, OptionCounts, 0)
+    ).
