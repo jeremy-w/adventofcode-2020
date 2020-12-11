@@ -7,11 +7,20 @@
 :- import_module char, int, list, string, util.
 :- import_module solutions.
 
+:- func floor = char.
+floor = det_from_int(0'.). %'
+
+:- func occupied = char.
+occupied = '#'.
+
+:- func empty = char.
+empty = 'L'.
+
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
     % Test: Part 1
-    Expected1 = 7*5,
-    Actual1 = part1(ints(example1)),
+    Expected1 = 37,
+    Actual1 = part1(parse_seat_map(example1)),
     io.format("P1 test: expected %d, got %d\n", [i(Expected1), i(Actual1)], !IO),
 
     % io.format("P1 test b: expected 22 1-jolt, 10 3-jolt, for %d, got %d\n", [i(22*10), i(part1(ints(example1b)))], !IO),
@@ -25,103 +34,110 @@ main(!IO) :-
     io.print_line("=== * ===", !IO).
 
 :- func example1 = string.
-example1 = "16
-10
-15
-5
-1
-11
-7
-19
-6
-12
-4
+example1 = "L.LL.LL.LL
+LLLLLLL.LL
+L.L.L..L..
+LLLL.LL.LL
+L.LL.LL.LL
+L.LLLLL.LL
+..L.L.....
+LLLLLLLLLL
+L.LLLLLL.L
+L.LLLLL.LL
 ".
 
-:- func example1b = string.
-example1b = "28
-33
-18
-42
-31
-14
-46
-20
-48
-47
-24
-23
-49
-45
-19
-38
-39
-11
-1
-32
-25
-35
-8
-17
-7
-9
-4
-2
-34
-10
-3
-".
+:- func afterNRoundsExpect = list(string).
+afterNRoundsExpect = [
+"#.##.##.##
+#######.##
+#.#.#..#..
+####.##.##
+#.##.##.##
+#.#####.##
+..#.#.....
+##########
+#.######.#
+#.#####.##
+",
 
-:- func part1(list(int)) = int.
-part1(Joltages) = ProductOf1And3Deltas :-
-    InOrder = sort(Joltages),
-    Pairs = chunk(zip(InOrder, det_tail(InOrder)), 2),
-    Deltas = filter_map((func([H, T]) = T - H is semidet), Pairs),
-    foldl2((pred(Delta::in, Ones0::in, Ones::out, Threes0::in, Threes::out) is det :-
-        ( if Delta = 1
-        then
-            Ones = Ones0 + 1,
-            Threes = Threes0
-        else if Delta = 3
-        then
-            Threes = Threes0 + 1,
-            Ones = Ones0
-        else
-            Threes = Threes0,
-            Ones0 = Ones
-        )), Deltas, 0, OnesCount, 0, ThreesCount),
-    trace [io(!IO), runtime(env("TRACE"))] (
-        io.write_line({"input", Joltages}, !IO),
-        io.write_line({"in order", InOrder}, !IO),
-        io.write_line({"pairs", Pairs}, !IO),
-        io.write_line({"deltas", Deltas}, !IO),
-        io.write_line({"stats", 1, OnesCount, 3, ThreesCount}, !IO)
-    ),
-    OnesCountIncludingOutlet = OnesCount + 1,
-    ThreesCountIncludingDevice = ThreesCount + 1,
-    ProductOf1And3Deltas = OnesCountIncludingOutlet * ThreesCountIncludingDevice.
+"#.LL.L#.##
+#LLLLLL.L#
+L.L.L..L..
+#LLL.LL.L#
+#.LL.LL.LL
+#.LLLL#.##
+..L.L.....
+#LLLLLLLL#
+#.LLLLLL.L
+#.#LLLL.##
+",
 
-:- func part2(list(int)) = int.
-part2(AdapterJoltages) = CountOfDistinctArrangements :-
-    InOrder: list(int) = sort(AdapterJoltages),
-    AllJoltages = [0 | InOrder] ++ [det_last(InOrder) + 3],
-    arrangements_from(0, AllJoltages, CountOfDistinctArrangements).
+"#.##.L#.##
+#L###LL.L#
+L.#.#..#..
+#L##.##.L#
+#.##.LL.LL
+#.###L#.##
+..#.#.....
+#L######L#
+#.LL###L.L
+#.#L###.##
+",
 
-:- pragma memo(arrangements_from/3).
-:- pred arrangements_from(int::in, list(int)::in, int::out).
-arrangements_from(N, Js, Out) :-
-    trace [io(!IO), runtime(env("ARRANGE"))] (
-        io.write_line({"N", N}, !IO)
-    ),
-    Options = filter((pred(J::in) is semidet :- J - N =< 3, J > N), Js),
-    ( if is_empty(Options)
-    then
-        Out = 1
-    else
-        OptionCounts = map((func(Option) = R :-
-            arrangements_from(Option, Js, R)), Options),
-        trace [io(!IO), runtime(env("ARRANGE"))] (
-            io.write_line({"N", N, "Options", Options, "OptionCounts", OptionCounts}, !IO)
-        ),
-        Out = foldl(plus, OptionCounts, 0)
-    ).
+"#.#L.L#.##
+#LLL#LL.L#
+L.L.L..#..
+#LLL.##.L#
+#.LL.LL.LL
+#.LL#L#.##
+..L.L.....
+#L#LLLL#L#
+#.LLLLLL.L
+#.#L#L#.##
+",
+
+"#.#L.L#.##
+#LLL#LL.L#
+L.#.L..#..
+#L##.##.L#
+#.#L.LL.LL
+#.#L#L#.##
+..L.L.....
+#L#L##L#L#
+#.LLLLLL.L
+#.#L#L#.##
+"
+].
+
+:- func part1(seat_map) = int.
+part1(seat_map(_NRows, _NCols, Rows)) = OccupiedSeatCount :-
+    % repeat(step, seat_map, StableSeatMap),
+    RowLists = map(to_char_list, Rows),
+    RowCounts = map((func(Seats) = Count :-
+        OccupiedOnly = filter(unify(occupied), Seats),
+        Count = length(OccupiedOnly)), RowLists),
+    OccupiedSeatCount = foldl(plus, RowCounts, 0).
+
+% List of rows.
+:- type seat_map ---> seat_map(nrows::int, ncols::int, rows::list(string)).
+
+% Tiles around the given 0-indexed r,c location.
+:- func around(seat_map, int, int) = list(char).
+around(S, R0, C0) = Around :-
+    filter_map((pred({RAt, CAt}::in, C::out) is semidet :-
+        at(S, RAt, CAt, C)), [
+            {R0 - 1, C0 - 1}, {R0 - 1, C0}, {R0 - 1, C0 + 1},
+            {R0, C0 - 1}, /* SKIP */ {R0, C0 + 1},
+            {R0 + 1, C0 - 1}, {R0 + 1, C0}, {R0 + 1, C0 + 1}], Around).
+
+% Fails if off map.
+:- pred at(seat_map::in, int::in, int::in, char::out) is semidet.
+at(seat_map(_NRows, _NCols, Rows), R0, C0, C) :-
+    list.index0(Rows, R0, Cols),
+    string.index(Cols, C0, C).
+
+:- func parse_seat_map(string) = seat_map.
+parse_seat_map(Input) = seat_map(NRows, NCols, Rows) :-
+    Rows = words(strip(Input)),
+    NRows = length(Rows),
+    NCols = length(det_head(Rows)).
