@@ -118,6 +118,38 @@ part1(seat_map(_NRows, _NCols, Rows)) = OccupiedSeatCount :-
         Count = length(OccupiedOnly)), RowLists),
     OccupiedSeatCount = foldl(plus, RowCounts, 0).
 
+:- func step(seat_map) = seat_map.
+step(S) = seat_map(S^nrows, S^ncols, S1) :-
+    S1 = S^rows.
+    % for R0 in 0 .. (S^nrows - 1)
+    %     for C0 in 0 .. (S^ncols - 1)
+    %         SNext = step_at(S, R0, C0)
+
+:- func step_at(seat_map, int, int) = seat_map.
+step_at(S, R0, C0) = SNext :-
+    ( if at(S, R0, C0, Was)
+    then
+        Around = around(S, R0, C0),
+        OccupiedAround = length(filter(unify(occupied), Around)),
+        WillBe = next(Was, OccupiedAround),
+        update(S, R0, C0, WillBe, SNext)
+    else
+        SNext = S
+    ).
+
+:- func next(char, int) = char.
+next(C, N) = Next :-
+    (if
+        C = empty
+    then
+        Next = (if N = 0 then occupied else empty)
+    else if C = occupied
+    then
+        Next = (if N >= 4 then empty else occupied)
+    else
+        Next = C).
+
+
 % List of rows.
 :- type seat_map ---> seat_map(nrows::int, ncols::int, rows::list(string)).
 
@@ -135,6 +167,13 @@ around(S, R0, C0) = Around :-
 at(seat_map(_NRows, _NCols, Rows), R0, C0, C) :-
     list.index0(Rows, R0, Cols),
     string.index(Cols, C0, C).
+
+:- pred update(seat_map::in, int::in, int::in, char::in, seat_map::out) is det.
+update(S0, R0, C0, C, S) :-
+    list.det_index0(S0^rows, R0, Row),
+    NewRow = det_set_char(C, C0, Row),
+    NewRows = det_replace_nth(S0^rows, R0, NewRow),
+    S = S0^rows := NewRows.
 
 :- func parse_seat_map(string) = seat_map.
 parse_seat_map(Input) = seat_map(NRows, NCols, Rows) :-
