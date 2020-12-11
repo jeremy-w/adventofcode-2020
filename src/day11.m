@@ -18,19 +18,27 @@ empty = 'L'.
 
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
-    % Test: Part 1
+    % Test: Part 2
     SeatMapE1 = parse_seat_map(example1),
-    % io.write_line(step(SeatMapE1), !IO),
-    Expected1 = 37,
-    Actual1 = part1(SeatMapE1),
-    io.format("P1 test: expected %d, got %d\n", [i(Expected1), i(Actual1)], !IO),
+    RayCastEx = parse_seat_map(".......#.
+...#.....
+.#.......
+.........
+..#L....#
+....#....
+.........
+#........
+...#.....
+"),
+    Around = raycast_around(RayCastEx, 4, 3),
+    io.write_line({"raycast test: expected 8 occupied seats #, found:", Around}, !IO),
+    % (if at(RayCastEx, 4, 3, C) then io.write_line({C, Around}, !IO) else true),
+    Expected2 = 26,
+    % Actual2 = part2(SeatMapE1),
+    % io.format("P2 test: expected %d, got %d\n", [i(Expected2), i(Actual2)], !IO),
 
-    util.read_file_as_string("../input/day11.txt", Input, !IO),
-    io.format("P1: got %d\n", [i(part1(parse_seat_map(Input)))], !IO),
-
-    % io.format("P2 test: expected %d, got %d\n", [i(8), i(part2(ints(example1)))], !IO),
-    % io.format("P2 test 2: expected %d, got %d\n", [i(19208), i(part2(ints(example1b)))], !IO),
-    % io.format("P2: got %d\n", [i(part2(ints(Input)))], !IO),
+    % util.read_file_as_string("../input/day11.txt", Input, !IO),
+    % io.format("P2: got %d\n", [i(part2(parse_seat_map(Input)))], !IO),
     io.print_line("=== * ===", !IO).
 
 :- func example1 = string.
@@ -46,71 +54,8 @@ L.LLLLLL.L
 L.LLLLL.LL
 ".
 
-:- func afterNRoundsExpect = list(string).
-afterNRoundsExpect = [
-"#.##.##.##
-#######.##
-#.#.#..#..
-####.##.##
-#.##.##.##
-#.#####.##
-..#.#.....
-##########
-#.######.#
-#.#####.##
-",
-
-"#.LL.L#.##
-#LLLLLL.L#
-L.L.L..L..
-#LLL.LL.L#
-#.LL.LL.LL
-#.LLLL#.##
-..L.L.....
-#LLLLLLLL#
-#.LLLLLL.L
-#.#LLLL.##
-",
-
-"#.##.L#.##
-#L###LL.L#
-L.#.#..#..
-#L##.##.L#
-#.##.LL.LL
-#.###L#.##
-..#.#.....
-#L######L#
-#.LL###L.L
-#.#L###.##
-",
-
-"#.#L.L#.##
-#LLL#LL.L#
-L.L.L..#..
-#LLL.##.L#
-#.LL.LL.LL
-#.LL#L#.##
-..L.L.....
-#L#LLLL#L#
-#.LLLLLL.L
-#.#L#L#.##
-",
-
-"#.#L.L#.##
-#LLL#LL.L#
-L.#.L..#..
-#L##.##.L#
-#.#L.LL.LL
-#.#L#L#.##
-..L.L.....
-#L#L##L#L#
-#.LLLLLL.L
-#.#L#L#.##
-"
-].
-
-:- func part1(seat_map) = int.
-part1(S) = OccupiedSeatCount :-
+:- func part2(seat_map) = int.
+part2(S) = OccupiedSeatCount :-
     repeat_till_stable(S, StableSeatMap),
     OccupiedSeatCount = occupied_seat_count(StableSeatMap).
 
@@ -143,7 +88,7 @@ step_row(S, R0, SAcc) = SNext :-
 step_at(S, R0, C0, SAcc) = SNext :-
     ( if at(S, R0, C0, Was)
     then
-        Around = around(S, R0, C0),
+        Around = raycast_around(S, R0, C0),
         OccupiedAround = length(filter(unify(occupied), Around)),
         WillBe = next(Was, OccupiedAround),
         update(SAcc, R0, C0, WillBe, SNext)
@@ -159,7 +104,7 @@ next(C, N) = Next :-
         Next = (if N = 0 then occupied else empty)
     else if C = occupied
     then
-        Next = (if N >= 4 then empty else occupied)
+        Next = (if N >= 5 then empty else occupied)
     else
         Next = C).
 
@@ -175,6 +120,60 @@ around(S, R0, C0) = Around :-
             {R0 - 1, C0 - 1}, {R0 - 1, C0}, {R0 - 1, C0 + 1},
             {R0, C0 - 1}, /* SKIP */ {R0, C0 + 1},
             {R0 + 1, C0 - 1}, {R0 + 1, C0}, {R0 + 1, C0 + 1}], Around).
+
+% Seats, occupied only, visible in all 8 directions from the location.
+:- func raycast_around(seat_map, int, int) = list(char).
+raycast_around(S, R0, C0) = Around :-
+    % Here are all the r,c indexes we need to check for a seat, in order. The order of scanning is key!
+    Left = map(((func(C) = Result :-
+        Result = {R0, C})), reverse(0 .. (C0 - 1))),
+    Right = map(((func(C) = Result :-
+        Result = {R0, C})), (C0 + 1) .. (S^ncols - 1)),
+    Up = map((func(R) = Result :-
+        Result = {R, C0}), reverse(0 .. (R0 - 1))),
+    Down = map((func(R) = Result :-
+        Result = {R, C0}), (R0 + 1) .. (S^nrows - 1)),
+    % Forgot the diagonals to start!
+    Builder = diag(S, R0, C0),
+    UpLeft = Builder({-1, -1}),
+    UpRight = Builder({-1, +1}),
+    DownLeft = Builder({+1, -1}),
+    DownRight = Builder({+1, +1}),
+    % trace [io(!IO)] (io.write_line({"R,C", {R0, C0}, "Left", Left, "Right", Right, "Up", Up, "Down", Down}, !IO)),
+    Around = map(raycast(S), [Left, Right, Up, Down, UpLeft, UpRight, DownLeft, DownRight]).
+
+:- func diag(seat_map, int, int, {int, int}) = list({int, int}).
+diag(S, R0, C0, {DeltaR, DeltaC}) = Indexes :-
+    (if
+        diag_step(S, R0, C0, {DeltaR, DeltaC}, {R1, C1})
+    then
+        Indexes = [{R1, C1} | diag(S, R1, C1, {DeltaR, DeltaC})]
+    else
+        Indexes = []
+    ).
+
+:- pred diag_step(seat_map::in, int::in, int::in, {int, int}::in, {int, int}::out) is semidet.
+diag_step(S, R0, C0, {DeltaR, DeltaC}, {R1, C1}) :-
+    R1 = R0 + DeltaR,
+    R1 >= 0,
+    R1 < S^nrows,
+    C1 = C0 + DeltaC,
+    C1 >= 0,
+    C1 < S^ncols.
+
+% Returns first seat found, whether occupied or empty.
+% Returns floor if no seats.
+:- func raycast(seat_map, list({int, int})) = char.
+raycast(S, Indexes) = Seat :-
+    filter_map((pred({R0, C0}::in, Result::out) is semidet :-
+        at(S, R0, C0, Result)), Indexes, Tiles : list(char)),
+    ( if find_first_match((pred(X::in) is semidet :-
+        X = occupied; X = empty), Tiles, C)
+    then
+        Seat = C
+    else
+        Seat = floor
+    ).
 
 % Fails if off map.
 :- pred at(seat_map::in, int::in, int::in, char::out) is semidet.
