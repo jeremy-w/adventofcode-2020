@@ -34,11 +34,11 @@ main(!IO) :-
     io.write_line({"raycast test: expected 8 occupied seats #, found:", Around}, !IO),
     % (if at(RayCastEx, 4, 3, C) then io.write_line({C, Around}, !IO) else true),
     Expected2 = 26,
-    % Actual2 = part2(SeatMapE1),
-    % io.format("P2 test: expected %d, got %d\n", [i(Expected2), i(Actual2)], !IO),
+    Actual2 = part2(SeatMapE1),
+    io.format("P2 test: expected %d, got %d\n", [i(Expected2), i(Actual2)], !IO),
 
-    % util.read_file_as_string("../input/day11.txt", Input, !IO),
-    % io.format("P2: got %d\n", [i(part2(parse_seat_map(Input)))], !IO),
+    util.read_file_as_string("../input/day11.txt", Input, !IO),
+    io.format("P2: got %d\n", [i(part2(parse_seat_map(Input)))], !IO),
     io.print_line("=== * ===", !IO).
 
 :- func example1 = string.
