@@ -38,12 +38,12 @@ action_from_string("F", f).
 
 :- type bearing ---> north; south; east; west.
 
-:- type sea ---> sea(easty :: int, southy :: int, dir :: bearing).
+:- type sea ---> sea(easty :: int, southy :: int, dir :: bearing, ship_easty::int, ship_southy::int).
 :- func init_sea = sea.
-init_sea = sea(0, 0, east).
+init_sea = sea(10, -1, east, 0, 0).
 
 :- func manhattan(sea) = int.
-manhattan(sea(X, Y, _)) = abs(X) + abs(Y).
+manhattan(S) = abs(S^ship_easty) + abs(S^ship_southy).
 
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
@@ -63,15 +63,18 @@ F11
     then true %io.write_line(Cmds, !IO)
     else io.print_line("Failed parsing input", !IO)
     ),
-    % P2 = part2(det_cmds_from_string(Input)),
-    % io.format("P2: got %d\n", [i(P2)], !IO),
+    P2 = part2(det_cmds_from_string(Input)),
+    io.format("P2: got %d\n", [i(P2)], !IO),
 
     io.print_line("=== * ===", !IO).
 
 :- func part2(list(cmd)) = int.
 part2(Cmds) = Result :-
     Sea0 = init_sea,
-    foldl(step, Cmds, Sea0, Sea),
+    foldl((pred(Cmd::in, S0::in, S::out) is det :-
+        step(Cmd, S0, S)
+        %, trace [io(!IO)] (io.write_line({"step", Cmd, S0, S}, !IO))
+    ), Cmds, Sea0, Sea),
     Result = manhattan(Sea).
 
 :- pred step(cmd::in, sea::in, sea::out) is det.
@@ -85,12 +88,12 @@ step(cmd(w, N), Sea, SeaNext) :-
     SeaNext = Sea^easty := Sea^easty - N.
 step(cmd(f, N), Sea, SeaNext) :-
     % forward_by_bearing(N, Sea, SeaNext). % PART1
-    SeaNext = foldl((func(_, S0) = Result :-
-        Result = forward_to_waypoint(S0)), 1 .. N, Sea).
+    SeaNext = forward_to_waypoint(Sea, N).
 
-:- func forward_to_waypoint(sea) = sea.
-forward_to_waypoint(Sea) = SeaNext :-
-    SeaNext = Sea. % TODO: this thing
+:- func forward_to_waypoint(sea, int) = sea.
+forward_to_waypoint(Sea, N) = SeaNext :-
+    Sea1 = Sea^ship_easty := Sea^ship_easty + N*Sea^easty,
+    SeaNext = Sea1^ship_southy := Sea^ship_southy + N*Sea1^southy.
 
 :- pred forward_by_bearing(int::in, sea::in, sea::out) is det.
 forward_by_bearing(N, Sea, SeaNext) :-
@@ -107,11 +110,17 @@ forward_by_bearing(N, Sea, SeaNext) :-
 
 
 step(cmd(l, N), Sea, SeaNext) :-
-    Bearing = Sea^dir,
     TurnCount = N / 90,
-    NextBearing = foldl((func(_, S0) = Result :-
-        Result = turn_left(S0)), 1 .. TurnCount, Bearing),
-    SeaNext = Sea^dir := NextBearing.
+    SeaNext = foldl((func(_, S0) = Result :-
+        Result = waypoint_left(S0)), 1 .. TurnCount, Sea).
+
+:- func waypoint_left(sea) = sea.
+waypoint_left(Sea) = SeaNext :-
+    % easty 1, southy 1 becomes easty 1, southy -1 becomes -1, -1 becomes -1, 1 becomes 1, 1 again.
+    NextEasty = Sea^southy,
+    NextSouthy = -1 * Sea^easty,
+    SeaNext0 = Sea^easty := NextEasty,
+    SeaNext = SeaNext0^southy := NextSouthy.
 
 :- func turn_left(bearing) = bearing.
 turn_left(Bearing) = NextBearing :-
@@ -126,13 +135,17 @@ turn_left(Bearing) = NextBearing :-
     ).
 
 step(cmd(r, N), Sea, SeaNext) :-
-    Bearing = Sea^dir,
     TurnCount = N / 90,
-    Iterations = 1 .. TurnCount,
-    NextBearing = foldl((func(_, S0) = Result :-
-        Result = turn_right(S0)), Iterations, Bearing),
-    % trace [io(!IO)] (io.write_line({"N", N, "Bearing", Bearing, "TurnCount", TurnCount, "Its", Iterations, "NextBearing", NextBearing}, !IO)),
-    SeaNext = Sea^dir := NextBearing.
+    SeaNext = foldl((func(_, S0) = Result :-
+        Result = waypoint_right(S0)), 1 .. TurnCount, Sea).
+
+:- func waypoint_right(sea) = sea.
+waypoint_right(Sea) = SeaNext :-
+    % easty 1, southy 1 becomes easty -1, southy 1 becomes -1, -1 becomes 1, -1 becomes 1, 1 again.
+    NextEasty = -1 * Sea^southy,
+    NextSouthy = Sea^easty,
+    SeaNext0 = Sea^easty := NextEasty,
+    SeaNext = SeaNext0^southy := NextSouthy.
 
 :- func turn_right(bearing) = bearing.
 turn_right(Bearing) = NextBearing :-
