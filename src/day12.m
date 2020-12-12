@@ -4,7 +4,7 @@
 :- pred main(io::di, io::uo) is det.
 
 :- implementation.
-:- import_module char, int, list, string, util.
+:- import_module char, int, list, string, util, require.
 :- import_module solutions.
 
 :- type action ---> n; s; e; w; l; r; f.
@@ -14,6 +14,11 @@
 cmds_from_string(Input, Cmds) :-
     Lines = split_at_string("\n", strip(Input)),
     map(cmd_from_string, Lines, Cmds).
+:- func det_cmds_from_string(string) = list(cmd).
+det_cmds_from_string(Input) = Result :-
+    ( if cmds_from_string(Input, R)
+    then Result = R
+    else unexpected($module, $pred, "failed parsing input")).
 
 :- pred cmd_from_string(string::in, cmd::out) is semidet.
 cmd_from_string(Line, Cmd) :-
@@ -31,17 +36,31 @@ action_from_string("L", l).
 action_from_string("R", r).
 action_from_string("F", f).
 
+:- type bearing ---> north; south; east; west.
+
+:- type sea ---> sea({int, int}, bearing).
+:- func init_sea = sea.
+init_sea = sea({0, 0}, east).
+
+:- func manhattan(sea) = int.
+manhattan(sea({X, Y}, _)) = X + Y.
+
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
 
-    Example = "",
-    E1 = 35,
-    A1 = part1(Example),
+    Example = "F10
+N3
+F7
+R90
+F11
+",
+    E1 = 25,
+    A1 = part1(det_cmds_from_string(Example)),
     io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
     util.read_file_as_string("../input/day12.txt", Input, !IO),
     ( if cmds_from_string(Input, Cmds)
-    then io.write_line(Cmds, !IO)
+    then true %io.write_line(Cmds, !IO)
     else io.print_line("Failed parsing input", !IO)
     ),
     % P1 = part1(Input),
@@ -49,5 +68,8 @@ main(!IO) :-
 
     io.print_line("=== * ===", !IO).
 
-:- func part1(string) = int.
-part1(_) = 10.
+:- func part1(list(cmd)) = int.
+part1(Cmds) = Result :-
+    Sea0 = init_sea,
+    Sea = Sea0, % TODO: SIM
+    Result = manhattan(Sea).
