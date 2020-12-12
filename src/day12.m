@@ -54,22 +54,22 @@ F7
 R90
 F11
 ",
-    E1 = 25,
-    A1 = part1(det_cmds_from_string(Example)),
-    io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
+    E1 = 286,
+    A1 = part2(det_cmds_from_string(Example)),
+    io.format("P2 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
     util.read_file_as_string("../input/day12.txt", Input, !IO),
     ( if cmds_from_string(Input, _Cmds)
     then true %io.write_line(Cmds, !IO)
     else io.print_line("Failed parsing input", !IO)
     ),
-    P1 = part1(det_cmds_from_string(Input)),
-    io.format("P1: got %d\n", [i(P1)], !IO),
+    % P2 = part2(det_cmds_from_string(Input)),
+    % io.format("P2: got %d\n", [i(P2)], !IO),
 
     io.print_line("=== * ===", !IO).
 
-:- func part1(list(cmd)) = int.
-part1(Cmds) = Result :-
+:- func part2(list(cmd)) = int.
+part2(Cmds) = Result :-
     Sea0 = init_sea,
     foldl(step, Cmds, Sea0, Sea),
     Result = manhattan(Sea).
