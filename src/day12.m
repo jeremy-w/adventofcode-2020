@@ -84,6 +84,16 @@ step(cmd(e, N), Sea, SeaNext) :-
 step(cmd(w, N), Sea, SeaNext) :-
     SeaNext = Sea^easty := Sea^easty - N.
 step(cmd(f, N), Sea, SeaNext) :-
+    % forward_by_bearing(N, Sea, SeaNext). % PART1
+    SeaNext = foldl((func(_, S0) = Result :-
+        Result = forward_to_waypoint(S0)), 1 .. N, Sea).
+
+:- func forward_to_waypoint(sea) = sea.
+forward_to_waypoint(Sea) = SeaNext :-
+    SeaNext = Sea. % TODO: this thing
+
+:- pred forward_by_bearing(int::in, sea::in, sea::out) is det.
+forward_by_bearing(N, Sea, SeaNext) :-
     Bearing = Sea^dir,
     ( if Bearing = north
     then step(cmd(n, N), Sea, SeaNext)
@@ -94,6 +104,8 @@ step(cmd(f, N), Sea, SeaNext) :-
     else % Bearing = west then
         step(cmd(w, N), Sea, SeaNext)
     ).
+
+
 step(cmd(l, N), Sea, SeaNext) :-
     Bearing = Sea^dir,
     TurnCount = N / 90,
