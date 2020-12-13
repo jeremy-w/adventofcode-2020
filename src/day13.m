@@ -12,16 +12,28 @@ main(!IO) :-
 
     WikipediaActual = solve([{0, 3}, {3, 4}, {4, 5}]),
     WikipediaExpected = 39,
-    io.format("Wikipedia test: expected %d, got %d\n", [i(WikipediaExpected), i(WikipediaActual)], !IO),
+    io.format("Wikipedia test: expected %d, got %d\n\n\n", [i(WikipediaExpected), i(WikipediaActual)], !IO),
 
     Example = [{0,7},{13-1,13},{59-4,59},{31-6,31},{19-7,19}],
     E1 = 1068781,
     A1 = solve(Example),
-    io.format("P2 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
+    io.format("P2 test: expected %d, got %d\n\n\n", [i(E1), i(A1)], !IO),
 
-    IndexAndIds = [{787-48, 787}, {523-17, 523}, {0, 17}, {41-7, 41}, {(13-35) mod 13, 13}, {(36-19) mod 19, 19}, {(23-40) mod 23, 23}, {(37-54) mod 37, 37}, {(29 - 77) mod 29, 29}],
-    P2 = solve(IndexAndIds),
-    io.format("P2: got %d\n", [i(P2)], !IO),
+    IndexAndIds = [{48, 787}, {17, 523}, {0, 17}, {7, 41}, {35, 13}, {36, 19}, {40, 23}, {54, 37}, {77, 29}],
+    Modulos = [
+        {787 - 48, 787},
+        {523 - 17, 523},
+        {0, 17},
+        {(41 - 7) mod 7, 41},
+        {(13 - 35) mod 13, 13},
+        {(19 - 36) mod 19, 19},
+        {(23 - 40) mod 23, 23},
+        {(37 - 54) mod 37, 37},
+        {(29 - 77) mod 29, 29}],
+    P2 = solve(Modulos),
+    Err1 = (if P2 > 365101499141357 then 0 else 1),
+    Err2 = (if P2 < 1474080191540103 then 0 else 1),
+    io.format("P2: got %d - too low? %d - too high? %d\n", [i(P2), i(Err1), i(Err2)], !IO),
 
     io.print_line("=== * ===", !IO).
 
