@@ -16,8 +16,8 @@ main(!IO) :-
     io.format("P2 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
     IndexAndIds = [{48, 787}, {17, 523}, {0, 17}, {7, 41}, {35, 13}, {36, 19}, {40, 23}, {54, 37}, {77, 29}],
-    % P2 = solve(Input),
-    % io.format("P2: got %d\n", [i(P2)], !IO),
+    P2 = solve(IndexAndIds),
+    io.format("P2: got %d\n", [i(P2)], !IO),
 
     io.print_line("=== * ===", !IO).
 
@@ -28,7 +28,7 @@ main(!IO) :-
 :- func solve(list({int, int})) = int.
 solve(Input) = Time :-
     sort(sortByBusIdDesc, Input, SortedBusIdDesc : list({int, int})),
-    trace [io(!IO)] (io.write_line({"sorted", SortedBusIdDesc}, !IO)),
+    % trace [io(!IO)] (io.write_line({"sorted", SortedBusIdDesc}, !IO)),
     {Offset, BusId} = det_head(SortedBusIdDesc),
     solve_loop({Offset, BusId}, SortedBusIdDesc, 0, Time).
 
@@ -45,16 +45,11 @@ if it takes too long, then find a way to skip to the next candidate for the firs
 :- pred solve_loop({int, int}::in, list({int, int})::in, int::in, int::out) is det.
 solve_loop({Offset, BusId}, Inputs, Multiple, Time) :-
     CandidateTime = Multiple*BusId - Offset,
-    trace [io(!IO)] (io.write_line({"checking", CandidateTime, "per bus ID", BusId, "with offset", Offset}, !IO)),
-    ( if
-        CandidateTime =< 1068781 % FIXME: stop for over-run in test case; remove
-     then
-        ( if valid_time_for_all(Inputs, CandidateTime)
-        then Time = CandidateTime
-        else solve_loop({Offset, BusId}, Inputs, Multiple + 1, Time))
-     else
-         Time = -1
-    ).
+    % trace [io(!IO)] (io.write_line({"checking", CandidateTime, "per bus ID", BusId, "with offset", Offset}, !IO)),
+    (if Multiple `mod` 100000000 = 0 then trace [io(!IO)] (io.write_line({"checking", CandidateTime, "multiple", Multiple}, !IO)) else true),
+    ( if valid_time_for_all(Inputs, CandidateTime)
+    then Time = CandidateTime
+    else solve_loop({Offset, BusId}, Inputs, Multiple + 1, Time)).
 
 :- pred valid_time_for_all(list({int, int})::in, int::in) is semidet.
 valid_time_for_all(Inputs, T) :-
