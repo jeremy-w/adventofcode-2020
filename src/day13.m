@@ -10,12 +10,16 @@
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
 
-    Example = [{0,7},{1,13},{4,59},{6,31},{7,19}],
+    WikipediaActual = solve([{0, 3}, {3, 4}, {4, 5}]),
+    WikipediaExpected = 39,
+    io.format("Wikipedia test: expected %d, got %d\n", [i(WikipediaExpected), i(WikipediaActual)], !IO),
+
+    Example = [{0,7},{13-1,13},{59-4,59},{31-6,31},{19-7,19}],
     E1 = 1068781,
     A1 = solve(Example),
     io.format("P2 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
-    IndexAndIds = [{48, 787}, {17, 523}, {0, 17}, {7, 41}, {35, 13}, {36, 19}, {40, 23}, {54, 37}, {77, 29}],
+    IndexAndIds = [{787-48, 787}, {523-17, 523}, {0, 17}, {41-7, 41}, {(13-35) mod 13, 13}, {(36-19) mod 19, 19}, {(23-40) mod 23, 23}, {(37-54) mod 37, 37}, {(29 - 77) mod 29, 29}],
     P2 = solve(IndexAndIds),
     io.format("P2: got %d\n", [i(P2)], !IO),
 
@@ -27,10 +31,29 @@ main(!IO) :-
 % they all seem to be primes.
 :- func solve(list({int, int})) = int.
 solve(Input) = Time :-
-    sort(sortByBusIdDesc, Input, SortedBusIdDesc : list({int, int})),
-    % trace [io(!IO)] (io.write_line({"sorted", SortedBusIdDesc}, !IO)),
+    sort(sortByBusIdDesc, Input, SortedBusIdDesc),
+    trace [io(!IO)] (io.write_line({"sorted", SortedBusIdDesc}, !IO)),
     {Offset, BusId} = det_head(SortedBusIdDesc),
-    solve_loop({Offset, BusId}, SortedBusIdDesc, 0, Time).
+    Rest = det_tail(SortedBusIdDesc),
+    {Time, _} = foldl(chineseRemainderThmStep, Rest, {Offset, BusId}).
+
+:- func chineseRemainderThmStep(bus, bus) = bus.
+chineseRemainderThmStep({A2, N2}, {A1, N1}) = {Xnext, Nnext} :-
+    crt_loop({A1, N1}, {A2, N2}, 0, {Xnext, Nnext}).
+
+:- type bus == {int, int}.
+:- pred crt_loop(bus::in, bus::in, int::in, bus::out) is det.
+crt_loop({A1, N1}, {A2, N2}, N, {Xnext, Nnext}) :-
+    Candidate = A1 + (N * N1),
+    (if
+        Candidate `unchecked_rem` N2 = A2
+     then
+         trace [io(!IO)] (io.write_line({"found", Candidate,  "N", N, "A1", {A1, N1}, "A2", {A2, N2}}, !IO)),
+        Xnext = Candidate,
+        Nnext = N1*N2
+     else
+         crt_loop({A1, N1}, {A2, N2}, N + 1, {Xnext, Nnext})
+    ).
 
 :- pred sortByBusIdDesc({int, int}::in, {int, int}::in, comparison_result::out) is det.
 sortByBusIdDesc({_, LeftId}, {_, RightId}, Result) :-
