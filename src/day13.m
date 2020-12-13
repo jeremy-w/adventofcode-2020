@@ -4,25 +4,68 @@
 :- pred main(io::di, io::uo) is det.
 
 :- implementation.
-:- import_module char, int, list, string, util.
+:- import_module char, int, list, string, util, math, float.
 :- import_module solutions.
 
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
 
-    Example = "",
-    E1 = 35,
-    A1 = part1(Example),
-    io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
+    Example = [{0,7},{1,13},{4,59},{6,31},{7,19}],
+    E1 = 1068781,
+    A1 = solve(Example),
+    io.format("P2 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
-    % util.read_file_as_string("../input/day13.txt", Input, !IO),
-    % P1 = part1(Input),
-    % io.format("P1: got %d\n", [i(P1)], !IO),
+    IndexAndIds = [{48, 787}, {17, 523}, {0, 17}, {7, 41}, {35, 13}, {36, 19}, {40, 23}, {54, 37}, {77, 29}],
+    % P2 = solve(Input),
+    % io.format("P2: got %d\n", [i(P2)], !IO),
 
     io.print_line("=== * ===", !IO).
 
-:- func part1(string) = int.
-part1(_) = 10.
+% input is a list of index, busId pairs.
+% output is the earliest minute where each busId arrives busId minutes after that time.
+% the busId is the minute the bus returns to the origin.
+% they all seem to be primes.
+:- func solve(list({int, int})) = int.
+solve(Input) = Time :-
+    sort(sortByBusIdDesc, Input, SortedBusIdDesc : list({int, int})),
+    trace [io(!IO)] (io.write_line({"sorted", SortedBusIdDesc}, !IO)),
+    {Offset, BusId} = det_head(SortedBusIdDesc),
+    solve_loop({Offset, BusId}, SortedBusIdDesc, 0, Time).
+
+:- pred sortByBusIdDesc({int, int}::in, {int, int}::in, comparison_result::out) is det.
+sortByBusIdDesc({_, LeftId}, {_, RightId}, Result) :-
+        compare(Result, RightId, LeftId).
+/*
+    for each multiple of the largest bus id:
+        add that bus id's offset
+        check valid time for all
+
+if it takes too long, then find a way to skip to the next candidate for the first two, maybe.
+*/
+:- pred solve_loop({int, int}::in, list({int, int})::in, int::in, int::out) is det.
+solve_loop({Offset, BusId}, Inputs, Multiple, Time) :-
+    CandidateTime = Multiple*BusId - Offset,
+    trace [io(!IO)] (io.write_line({"checking", CandidateTime, "per bus ID", BusId, "with offset", Offset}, !IO)),
+    ( if
+        CandidateTime =< 1068781 % FIXME: stop for over-run in test case; remove
+     then
+        ( if valid_time_for_all(Inputs, CandidateTime)
+        then Time = CandidateTime
+        else solve_loop({Offset, BusId}, Inputs, Multiple + 1, Time))
+     else
+         Time = -1
+    ).
+
+:- pred valid_time_for_all(list({int, int})::in, int::in) is semidet.
+valid_time_for_all(Inputs, T) :-
+    all_true(valid_time_for_one(T), Inputs).
+
+:- pred valid_time_for_one(int::in, {int, int}::in) is semidet.
+valid_time_for_one(T, {Index0, BusId}) :-
+    Ceil = ceiling(float(T) / float(BusId)),
+    ArrivalTime = float(BusId) * Ceil,
+    WaitTime = ArrivalTime - float(T),
+    WaitTime = float(Index0).
 
 /*
 I did part 1 on my phone with Pythonista because the input was teensy.
