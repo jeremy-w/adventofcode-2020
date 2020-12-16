@@ -134,24 +134,22 @@ part2(Input) = SumOfMemValues :-
 
 :- func store2(machine, addr, uint) = machine.
 store2(M0, RawAddr, Value) = M :-
-    WithSets = RawAddr \/ M0^mask_set,
-    % mask_clear now has no effect, but mask_floating has a big one!
-    FloatingMasks = masks(M0^floating_bits),
-    Addresses = foldl((func(Mask, A0) = A :-
-        AsSet = WithSets \/ Mask,
-        AsClear = WithSets /\ (\ Mask),
-        A = [AsSet, AsClear | A0]), FloatingMasks, []),
+    AddressToFloatify = RawAddr \/ M0^mask_set,
+    % mask_clear now has no effect, but mask_floating both sets and clears for every combo of bits
+    Build = (func(Ix, A0) = A :-
+        A = twopow(Ix) + A0),
+    Bits = combinations(M0^floating_bits),
+    trace [io(!IO)] (io.write_line({"Bits", Bits}, !IO)),
+    Addresses = foldl((func(B, A0) = A :-
+        ToSet = foldl(Build, B, 0u),
+        ToClear = foldl(Build, delete_elems(M0^floating_bits, B), 0u),
+        AsSet = AddressToFloatify \/ ToSet,
+        AsClear = AsSet /\ (\ ToClear),
+        trace [io(!IO)] (io.write_line({"B", B, "AsSet", AsSet, "AsClear", AsClear}, !IO)),
+        A = [AsClear | A0]), Bits, []),
     trace [io(!IO)] (io.write_line({"RawAddr", RawAddr, "Addresses", Addresses, "Value", Value}, !IO)),
     M = foldl((func(Addr, A0) = raw_store(A0, Addr, Value)), Addresses, M0).
 
-:- func masks(list(int)) = list(uint).
-masks([]) = [0u].
-masks([H | T]) = R :-
-    Recurse = masks(T),
-    Pairs = map((func(X) = Result :-
-        N = twopow(H),
-        AsSet = X \/ N,
-        AsClear = X /\ (\ N),
-        Result = [AsSet, AsClear]), Recurse),
-    trace [io(!IO)] (io.write_line({"H", H, "Pairs", Pairs, "Recurse", Recurse}, !IO)),
-    R = condense(Pairs).
+:- func combinations(list(T)) = list(list(T)).
+combinations([]) = [[]].
+combinations([H | T]) = map(cons(H), combinations(T)) ++ combinations(T).
