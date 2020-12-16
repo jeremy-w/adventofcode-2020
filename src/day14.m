@@ -5,8 +5,10 @@
 
 :- implementation.
 :- import_module char.
+:- import_module int.
 :- import_module list.
 :- import_module map.
+:- import_module require.
 :- import_module string.
 :- import_module uint.
 :- import_module util.
@@ -31,8 +33,11 @@ mem[8] = 0
 
 :- func part1(string) = uint.
 part1(Input) = SumOfMemValues :-
-    SumOfMemValues = 0u.
-
+    Lines = split_at_string("\n", strip(Input)),
+    M0 = machine(init, 0u, 0u),
+    M = foldl(step, Lines, M0),
+    foldl_values((pred(X::in, Y::in, S::out) is det :-
+        S = X + Y), M^mem, 0u, SumOfMemValues).
 
 :- type addr == uint.
 
@@ -46,3 +51,50 @@ part1(Input) = SumOfMemValues :-
                 % for and-notting
             mask_clear :: uint
         ).
+
+:- func step(string, machine) = machine.
+step(Line, M0) = M :-
+    (if
+        [Target, ValueStr] = split_at_string(" = ", Line)
+    then
+        (if
+            Target = "mask"
+        then
+            M = update_masks(M0, ValueStr)
+        else if
+            remove_prefix("mem[", Target, Target1)
+        then
+            AddrStr = det_remove_suffix(Target1, "]"),
+            Addr : uint = cast_from_int(det_to_int(AddrStr)),
+            Value = cast_from_int(det_to_int(ValueStr)),
+            M = store(M0, Addr, Value)
+        else
+            trace [io(!IO)] (io.write_line({"Failed parsing line", Line}, !IO)),
+            M = M0
+        )
+    else
+        trace [io(!IO)] (io.write_line({"Failed parsing line", Line}, !IO)),
+        M = M0
+    ).
+
+:- func store(machine, addr, uint) = machine.
+store(M0, Addr, UnmaskedValue) = M :-
+        WithSets = UnmaskedValue \/ M0^mask_set,
+        WithClears = WithSets /\ (\ M0^mask_clear),
+        M = M0^mem^elem(Addr) := WithClears.
+
+:- func update_masks(machine, string) = machine.
+update_masks(M0, S) = M :-
+    Chars: list(char) = reverse(to_char_list(S)),
+    member_indexes0('1', Chars, OneIndexes),
+    member_indexes0('0', Chars, ZeroIndexes),
+    Build = (func(Ix, A0) = A :-
+        A = twopow(Ix) + A0),
+    SetMask = foldl(Build, OneIndexes, 0u),
+    ClearMask = foldl(Build, ZeroIndexes, 0u),
+    M1 = M0^mask_set := SetMask,
+    M = M1^mask_clear := ClearMask.
+
+:- func twopow(int) = uint.
+twopow(N) =
+    (if N =< 0 then 1u else 2u*twopow(N - 1)).
