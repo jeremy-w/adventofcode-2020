@@ -25,9 +25,9 @@ mem[8] = 0
     A1 = part1(Example),
     io.format("P1 test: expected %u, got %u\n", [u(E1), u(A1)], !IO),
 
-    % util.read_file_as_string("../input/day14.txt", Input, !IO),
-    % P1 = part1(Input),
-    % io.format("P1: got %d\n", [i(P1)], !IO),
+    util.read_file_as_string("../input/day14.txt", Input, !IO),
+    P1 = part1(Input),
+    io.format("P1: got %u\n", [u(P1)], !IO),
 
     io.print_line("=== * ===", !IO).
 
