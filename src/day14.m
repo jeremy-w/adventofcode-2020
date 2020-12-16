@@ -25,7 +25,7 @@ mem[8] = 0
     % A1 = part1(Example),
     % io.format("P1 test: expected %u, got %u\n", [u(E1), u(A1)], !IO),
 
-    % util.read_file_as_string("../input/day14.txt", Input, !IO),
+    util.read_file_as_string("../input/day14.txt", Input, !IO),
     % P1 = part1(Input),
     % io.format("P1: got %u\n", [u(P1)], !IO),
 
@@ -38,6 +38,9 @@ mem[26] = 1
     E2 = 208u,
     A2 = part2(Example2),
     io.format("P2 test: expected %u, got %u\n", [u(E2), u(A2)], !IO),
+
+    P2 = part2(Input),
+    io.format("P2: got %u\n", [u(P2)], !IO),
 
     io.print_line("=== * ===", !IO).
 
@@ -113,7 +116,7 @@ update_masks(M0, S) = M :-
     M1 = M0^mask_set := SetMask,
     M2 = M1^mask_clear := ClearMask,
     M = M2^floating_bits := FloatingBits,
-    trace [io(!IO)] (io.write_line({"update_masks", M0, S, M}, !IO)).
+    trace [io(!IO), runtime(env("TRACE_MASK"))] (io.write_line({"update_masks", M0, S, M}, !IO)).
 
 :- func twopow(int) = uint.
 twopow(N) =
@@ -122,7 +125,7 @@ twopow(N) =
 :- func raw_store(machine, addr, uint) = machine.
 raw_store(M0, Addr, Value) = M :-
     M = M0^mem^elem(Addr) := Value,
-    trace [io(!IO)] (io.write_line({"raw_store", Addr, Value}, !IO)).
+    trace [io(!IO), runtime(env("TRACE_STORE"))] (io.write_line({"raw_store", Addr, Value}, !IO)).
 
 :- func part2(string) = uint.
 part2(Input) = SumOfMemValues :-
@@ -139,15 +142,15 @@ store2(M0, RawAddr, Value) = M :-
     Build = (func(Ix, A0) = A :-
         A = twopow(Ix) + A0),
     Bits = combinations(M0^floating_bits),
-    trace [io(!IO)] (io.write_line({"Bits", Bits}, !IO)),
+    % trace [io(!IO)] (io.write_line({"Bits", Bits}, !IO)),
     Addresses = foldl((func(B, A0) = A :-
         ToSet = foldl(Build, B, 0u),
         ToClear = foldl(Build, delete_elems(M0^floating_bits, B), 0u),
         AsSet = AddressToFloatify \/ ToSet,
         AsClear = AsSet /\ (\ ToClear),
-        trace [io(!IO)] (io.write_line({"B", B, "AsSet", AsSet, "AsClear", AsClear}, !IO)),
+        % trace [io(!IO)] (io.write_line({"B", B, "AsSet", AsSet, "AsClear", AsClear}, !IO)),
         A = [AsClear | A0]), Bits, []),
-    trace [io(!IO)] (io.write_line({"RawAddr", RawAddr, "Addresses", Addresses, "Value", Value}, !IO)),
+    % trace [io(!IO)] (io.write_line({"RawAddr", RawAddr, "Addresses", Addresses, "Value", Value}, !IO)),
     M = foldl((func(Addr, A0) = raw_store(A0, Addr, Value)), Addresses, M0).
 
 :- func combinations(list(T)) = list(list(T)).
