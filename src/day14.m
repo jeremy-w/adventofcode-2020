@@ -21,16 +21,22 @@ mem[8] = 11
 mem[7] = 101
 mem[8] = 0
 ",
-    E1 = 165u,
-    A1 = part1(Example),
-    io.format("P1 test: expected %u, got %u\n", [u(E1), u(A1)], !IO),
+    % E1 = 165u,
+    % A1 = part1(Example),
+    % io.format("P1 test: expected %u, got %u\n", [u(E1), u(A1)], !IO),
 
-    util.read_file_as_string("../input/day14.txt", Input, !IO),
-    P1 = part1(Input),
-    io.format("P1: got %u\n", [u(P1)], !IO),
+    % util.read_file_as_string("../input/day14.txt", Input, !IO),
+    % P1 = part1(Input),
+    % io.format("P1: got %u\n", [u(P1)], !IO),
 
+    Example2 = "
+mask = 000000000000000000000000000000X1001X
+mem[42] = 100
+mask = 00000000000000000000000000000000X0XX
+mem[26] = 1
+",
     E2 = 208u,
-    A2 = part2(Example),
+    A2 = part2(Example2),
     io.format("P2 test: expected %u, got %u\n", [u(E2), u(A2)], !IO),
 
     io.print_line("=== * ===", !IO).
@@ -55,11 +61,11 @@ part1(Input) = SumOfMemValues :-
                 % for and-notting
             mask_clear :: uint,
                 % for permuting
-            mask_floating :: uint
+            floating_bits :: list(int)
         ).
 
 :- func init_machine = machine.
-init_machine = machine(init, 0u, 0u, 0u).
+init_machine = machine(init, 0u, 0u, []).
 
 :- type version ---> one; two.
 
@@ -103,13 +109,20 @@ update_masks(M0, S) = M :-
         A = twopow(Ix) + A0),
     SetMask = foldl(Build, OneIndexes, 0u),
     ClearMask = foldl(Build, ZeroIndexes, 0u),
+    member_indexes0('X', Chars, FloatingBits),
     M1 = M0^mask_set := SetMask,
-    M = M1^mask_clear := ClearMask.
+    M2 = M1^mask_clear := ClearMask,
+    M = M2^floating_bits := FloatingBits,
+    trace [io(!IO)] (io.write_line({"update_masks", M0, S, M}, !IO)).
 
 :- func twopow(int) = uint.
 twopow(N) =
     (if N =< 0 then 1u else 2u*twopow(N - 1)).
 
+:- func raw_store(machine, addr, uint) = machine.
+raw_store(M0, Addr, Value) = M :-
+    M = M0^mem^elem(Addr) := Value,
+    trace [io(!IO)] (io.write_line({"raw_store", Addr, Value}, !IO)).
 
 :- func part2(string) = uint.
 part2(Input) = SumOfMemValues :-
@@ -120,7 +133,25 @@ part2(Input) = SumOfMemValues :-
         S = X + Y), M^mem, 0u, SumOfMemValues).
 
 :- func store2(machine, addr, uint) = machine.
-store2(M0, Addr, UnmaskedValue) = M :-
-    WithSets = UnmaskedValue \/ M0^mask_set,
-    WithClears = WithSets /\ (\ M0^mask_clear),
-    M = M0^mem^elem(Addr) := WithClears.
+store2(M0, RawAddr, Value) = M :-
+    WithSets = RawAddr \/ M0^mask_set,
+    % mask_clear now has no effect, but mask_floating has a big one!
+    FloatingMasks = masks(M0^floating_bits),
+    Addresses = foldl((func(Mask, A0) = A :-
+        AsSet = WithSets \/ Mask,
+        AsClear = WithSets /\ (\ Mask),
+        A = [AsSet, AsClear | A0]), FloatingMasks, []),
+    trace [io(!IO)] (io.write_line({"RawAddr", RawAddr, "Addresses", Addresses, "Value", Value}, !IO)),
+    M = foldl((func(Addr, A0) = raw_store(A0, Addr, Value)), Addresses, M0).
+
+:- func masks(list(int)) = list(uint).
+masks([]) = [0u].
+masks([H | T]) = R :-
+    Recurse = masks(T),
+    Pairs = map((func(X) = Result :-
+        N = twopow(H),
+        AsSet = X \/ N,
+        AsClear = X /\ (\ N),
+        Result = [AsSet, AsClear]), Recurse),
+    trace [io(!IO)] (io.write_line({"H", H, "Pairs", Pairs, "Recurse", Recurse}, !IO)),
+    R = condense(Pairs).
