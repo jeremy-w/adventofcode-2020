@@ -10,14 +10,14 @@
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
 
-    Example = [0, 3, 6],
+    Example = [1,3,2],
     E1 = 1,
     A1 = part1(Example),
     io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
-    % Input = [2,0,1,7,4,14,18],
-    % P1 = part1(Input),
-    % io.format("P1: got %d\n", [i(P1)], !IO),
+    Input = [2,0,1,7,4,14,18],
+    P1 = part1(Input),
+    io.format("P1: got %d\n", [i(P1)], !IO),
 
     io.print_line("=== * ===", !IO).
 
@@ -31,7 +31,7 @@ game_init(Input) = game(Input, [], 0).
 
 :- func part1(list(int)) = int.
 part1(Input) = Spoken2020 :-
-    G: game = foldl(game_step, 1 .. 10, game_init(Input)),
+    G: game = foldl(game_step, 1 .. 2020, game_init(Input)),
     Spoken2020 = det_head(G^spoken).
 
 :- func game_step(int, game) = game.
@@ -52,4 +52,4 @@ game_step(_, G) = GNext :-
              GNext = G1^spoken := [0 | G1^spoken]
         )
     ),
-    trace [io(!IO)] (io.write_line({"G", GNext}, !IO)).
+    trace [io(!IO), runtime(env("TRACE"))] (io.write_line({"G", GNext}, !IO)).
