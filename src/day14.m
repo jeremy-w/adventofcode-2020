@@ -29,13 +29,17 @@ mem[8] = 0
     P1 = part1(Input),
     io.format("P1: got %u\n", [u(P1)], !IO),
 
+    E2 = 208u,
+    A2 = part2(Example),
+    io.format("P2 test: expected %u, got %u\n", [u(E2), u(A2)], !IO),
+
     io.print_line("=== * ===", !IO).
 
 :- func part1(string) = uint.
 part1(Input) = SumOfMemValues :-
     Lines = split_at_string("\n", strip(Input)),
-    M0 = machine(init, 0u, 0u),
-    M = foldl(step, Lines, M0),
+    M0 = init_machine,
+    M = foldl(step(one), Lines, M0),
     foldl_values((pred(X::in, Y::in, S::out) is det :-
         S = X + Y), M^mem, 0u, SumOfMemValues).
 
@@ -49,11 +53,18 @@ part1(Input) = SumOfMemValues :-
                 % for anding
             mask_set :: uint,
                 % for and-notting
-            mask_clear :: uint
+            mask_clear :: uint,
+                % for permuting
+            mask_floating :: uint
         ).
 
-:- func step(string, machine) = machine.
-step(Line, M0) = M :-
+:- func init_machine = machine.
+init_machine = machine(init, 0u, 0u, 0u).
+
+:- type version ---> one; two.
+
+:- func step(version, string, machine) = machine.
+step(Version, Line, M0) = M :-
     (if
         [Target, ValueStr] = split_at_string(" = ", Line)
     then
@@ -67,7 +78,7 @@ step(Line, M0) = M :-
             AddrStr = det_remove_suffix(Target1, "]"),
             Addr : uint = cast_from_int(det_to_int(AddrStr)),
             Value = cast_from_int(det_to_int(ValueStr)),
-            M = store(M0, Addr, Value)
+            M = (if Version = one then store(M0, Addr, Value) else store2(M0, Addr, Value))
         else
             trace [io(!IO)] (io.write_line({"Failed parsing line", Line}, !IO)),
             M = M0
@@ -98,3 +109,18 @@ update_masks(M0, S) = M :-
 :- func twopow(int) = uint.
 twopow(N) =
     (if N =< 0 then 1u else 2u*twopow(N - 1)).
+
+
+:- func part2(string) = uint.
+part2(Input) = SumOfMemValues :-
+    Lines = split_at_string("\n", strip(Input)),
+    M0 = init_machine,
+    M = foldl(step(two), Lines, M0),
+    foldl_values((pred(X::in, Y::in, S::out) is det :-
+        S = X + Y), M^mem, 0u, SumOfMemValues).
+
+:- func store2(machine, addr, uint) = machine.
+store2(M0, Addr, UnmaskedValue) = M :-
+    WithSets = UnmaskedValue \/ M0^mask_set,
+    WithClears = WithSets /\ (\ M0^mask_clear),
+    M = M0^mem^elem(Addr) := WithClears.
