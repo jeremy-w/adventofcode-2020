@@ -90,10 +90,14 @@ find_assignments(Input) = Assignment :-
     % But I'm kinda too tired now to keep going.
 
     % Brute force: Solve for field assignments by testing permutations till one of them succeeds for all remaining tickets.
-    solutions((pred(P::out) is multi :-
-        perm(0..(length(SaneInput^mine) - 1), P)), PossibleOrderings),
-    trace [io(!IO)] (io.write_line({"PossibleOrderingsCount", length(PossibleOrderings): int}, !IO)),
+    % TODO: move the testing into the solutions call rather than letting it build a massive list
     FieldNames = keys(SaneInput^fields),
+    solutions((pred(P::out) is nondet :-
+        perm(0..(length(SaneInput^mine) - 1), P),
+        A = set_from_corresponding_lists(init, FieldNames, P),
+        fits_input(SaneInput, A),
+        trace [io(!IO)] (io.write_line({"Valid Assignment Found", to_sorted_assoc_list(A): assoc_list(string, int)}, !IO))), PossibleOrderings),
+    trace [io(!IO)] (io.write_line({"PossibleOrderingsCount", length(PossibleOrderings): int}, !IO)),
     PossibleAssignments = map(set_from_corresponding_lists(init, FieldNames), PossibleOrderings),
     ValidAssignments = filter(fits_input(SaneInput), PossibleAssignments),
     Assignment = det_head(ValidAssignments).
