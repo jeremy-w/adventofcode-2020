@@ -3,6 +3,7 @@
 :- interface.
 :- import_module io.
 :- import_module list.
+:- import_module int.
 
     % Reads the file at the path into a string.
     % Throws if any error occurs.
@@ -11,6 +12,8 @@
     % Returns the whitespace-separated numbers in the string.
     % Non-numbers will be ignored - only and all numbers will be returned.
 :- func ints(string) = list(int).
+
+:- func list_min(list(int)) = int.
 
     % Returns a list of the tails of the list.
 :- func tails(list(N)) = list(list(N)).
@@ -45,6 +48,8 @@ ints(Input) = Ns :-
 
 tails([]) = [].
 tails([_ | T]) = [T | tails(T)].
+
+list_min(L) = foldl(min, L, max_int).
 
 %---%
 % HIGHER ORDER FUNCTIONS

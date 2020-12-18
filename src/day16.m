@@ -72,10 +72,23 @@ part2(Input) = ProductOfMyDepartureFields :-
     % Maps a field to its index0 in a ticket.
 :- type assignment == map(field, int).
 
+:- type intses == list(list(int)).
+
 :- func find_assignments(input) = assignment.
 find_assignments(Input) = Assignment :-
     % Throw out invalid tickets.
     SaneInput = Input^nearby := filter(all_true(in_range(megarange(Input))), Input^nearby),
+    AllTickets = [SaneInput^mine | SaneInput^nearby],
+
+    % Calculate the minimal ranges for each index.
+    FieldIndexes = 0 .. (length(SaneInput^mine) - 1),
+    ValuesAtIndexes: list(list(int)) = map((func(I) = map((func(L) = det_index0(L, I)), AllTickets)), FieldIndexes),
+    MinValues: list(int) = map(list_min, ValuesAtIndexes),
+    MaxValues: list(int) = map((func(Values) = foldl(max, Values, min_int)), ValuesAtIndexes),
+
+    % And now it's some sort of "solve the constraints" deal where we find a maximally constrained column, try one, and backtrack as needed.
+    % But I'm kinda too tired now to keep going.
+
     % Brute force: Solve for field assignments by testing permutations till one of them succeeds for all remaining tickets.
     solutions((pred(P::out) is multi :-
         perm(0..(length(SaneInput^mine) - 1), P)), PossibleOrderings),
