@@ -63,17 +63,28 @@ part2(Input) = ProductOfMyDepartureFields :-
     trace [io(!IO)] (io.write_line({"DepartureFields", DepartureFields}, !IO)),
 
     Assignment = find_assignments(Input),
-    Values = map_values_only(det_index0(Input^mine), Assignment),
+    AllValues = ticket_fields(Input^mine, Assignment),
+    DepartureValues = apply_to_list(DepartureFields, AllValues),
 
-    foldl_values((pred(X::in, Y::in, Prod::out) is det :-
-        Prod = X*Y), Values, 1, ProductOfMyDepartureFields).
+    ProductOfMyDepartureFields = foldl(times, DepartureValues, 1).
 
     % Maps a field to its index0 in a ticket.
 :- type assignment == map(field, int).
 
 :- func find_assignments(input) = assignment.
 find_assignments(Input) = Assignment :-
+    % Throw out invalid tickets.
+    SaneInput = Input^nearby := filter(all_true(in_range(megarange(Input))), Input^nearby),
+    % Solve for field assignments by testing permutations till one of them succeeds for all remaining tickets.
     Assignment = map_values_only(constantly(0), Input^fields).
+
+:- pred fits(map(field, ranges)::in, assignment::in, ticket::in) is semidet.
+fits(Fields, Assignment, Ticket) :-
+    FieldToValue = ticket_fields(Ticket, Assignment),
+    all_true((pred(Key::in) is semidet :- member(FieldToValue^elem(Key), Fields^elem(Key))), keys(Fields)).
+
+:- func ticket_fields(ticket, assignment) = map(field, int).
+ticket_fields(Ticket, Assignment) = map_values_only(det_index0(Ticket), Assignment).
 
 :- type field == string.
 :- type ticket == list(int).
