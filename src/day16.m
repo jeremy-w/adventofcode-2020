@@ -6,6 +6,7 @@
 :- implementation.
 :- import_module char, int, list, string, util, require.
 :- import_module map, assoc_list, pair, ranges.
+:- import_module solutions.
 
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
@@ -75,8 +76,18 @@ part2(Input) = ProductOfMyDepartureFields :-
 find_assignments(Input) = Assignment :-
     % Throw out invalid tickets.
     SaneInput = Input^nearby := filter(all_true(in_range(megarange(Input))), Input^nearby),
-    % Solve for field assignments by testing permutations till one of them succeeds for all remaining tickets.
-    Assignment = map_values_only(constantly(0), Input^fields).
+    % Brute force: Solve for field assignments by testing permutations till one of them succeeds for all remaining tickets.
+    solutions((pred(P::out) is multi :-
+        perm(0..(length(SaneInput^mine) - 1), P)), PossibleOrderings),
+    trace [io(!IO)] (io.write_line({"PossibleOrderingsCount", length(PossibleOrderings): int}, !IO)),
+    FieldNames = keys(SaneInput^fields),
+    PossibleAssignments = map(set_from_corresponding_lists(init, FieldNames), PossibleOrderings),
+    ValidAssignments = filter(fits_input(SaneInput), PossibleAssignments),
+    Assignment = det_head(ValidAssignments).
+
+:- pred fits_input(input::in, assignment::in) is semidet.
+fits_input(Input, Assignment) :-
+    all_true(fits(Input^fields, Assignment), [Input^mine | Input^nearby]).
 
 :- pred fits(map(field, ranges)::in, assignment::in, ticket::in) is semidet.
 fits(Fields, Assignment, Ticket) :-
