@@ -10,6 +10,7 @@
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
 
+    % Expected union range: 1-3, 5-11, 13-50
     Example = "class: 1-3 or 5-7
 row: 6-11 or 33-44
 seat: 13-40 or 45-50
@@ -27,16 +28,22 @@ nearby tickets:
     A1 = part1(parse_input(Example)),
     io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
-    % util.read_file_as_string("../input/day16.txt", Input, !IO),
-    % P1 = part1(Input),
-    % io.format("P1: got %d (expected 496)\n", [i(P1)], !IO),
+    util.read_file_as_string("../input/day16.txt", Input, !IO),
+    P1 = part1(parse_input(Input)),
+    io.format("P1: got %d (expected 26941)\n", [i(P1)], !IO),
 
     io.print_line("=== * ===", !IO).
 
 :- func part1(input) = int.
 part1(Input) = SumOfOutOfAllRanges :-
-    trace [io(!IO)] (io.write_line({"Input", Input}, !IO)),
-    SumOfOutOfAllRanges = -1.
+    % trace [io(!IO)] (io.write_line({"Input", Input}, !IO)),
+    Fields = fields(Input),
+    AllRanges = map.values(Fields),
+    MegaRange = foldl(union, AllRanges, empty),
+    AllValues = condense(Input^nearby),
+    OutOfRange = negated_filter((pred(N::in) is semidet :- member(N, MegaRange)), AllValues),
+    % trace [io(!IO)] (io.write_line({"OutOfRange", OutOfRange, "MegaRange", MegaRange}, !IO)),
+    SumOfOutOfAllRanges = foldl(plus, OutOfRange, 0).
 
 :- type field == string.
 :- type ticket == list(int).
