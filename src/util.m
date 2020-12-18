@@ -15,6 +15,8 @@
     % Returns a list of the tails of the list.
 :- func tails(list(N)) = list(list(N)).
 
+:- func constantly(int, T) = int.
+
 :- implementation.
 :- import_module string, require.
 
@@ -43,3 +45,7 @@ ints(Input) = Ns :-
 
 tails([]) = [].
 tails([_ | T]) = [T | tails(T)].
+
+%---%
+% HIGHER ORDER FUNCTIONS
+constantly(N, _) = N.

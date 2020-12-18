@@ -32,18 +32,48 @@ nearby tickets:
     P1 = part1(parse_input(Input)),
     io.format("P1: got %d (expected 26941)\n", [i(P1)], !IO),
 
+    E2: assignment = map.from_assoc_list(["row" - 0, "class" - 1, "seat" - 2]),
+    A2 = find_assignments(parse_input(Example)),
+    io.write_line({"P2 test", "got", to_sorted_assoc_list(A2): assoc_list(field, int), "--- expected", to_sorted_assoc_list(E2): assoc_list(field, int)}, !IO),
+
+    % P2 = part2(parse_input(Input)),
+    % io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
+
     io.print_line("=== * ===", !IO).
 
 :- func part1(input) = int.
 part1(Input) = SumOfOutOfAllRanges :-
     % trace [io(!IO)] (io.write_line({"Input", Input}, !IO)),
-    Fields = fields(Input),
-    AllRanges = map.values(Fields),
-    MegaRange = foldl(union, AllRanges, empty),
+    MegaRange = megarange(Input),
     AllValues = condense(Input^nearby),
-    OutOfRange = negated_filter((pred(N::in) is semidet :- member(N, MegaRange)), AllValues),
+    OutOfRange = negated_filter(in_range(MegaRange), AllValues),
     % trace [io(!IO)] (io.write_line({"OutOfRange", OutOfRange, "MegaRange", MegaRange}, !IO)),
     SumOfOutOfAllRanges = foldl(plus, OutOfRange, 0).
+
+:- func megarange(input) = ranges.
+megarange(I) = foldl(union, map.values(I^fields), empty).
+
+:- pred in_range(ranges::in, int::in) is semidet.
+in_range(R, N) :- member(N, R).
+
+:- func part2(input) = int.
+part2(Input) = ProductOfMyDepartureFields :-
+    DepartureFields: list(string) = filter((pred(X::in) is semidet :-
+        prefix(X, "departure")), keys(Input^fields)),
+    trace [io(!IO)] (io.write_line({"DepartureFields", DepartureFields}, !IO)),
+
+    Assignment = find_assignments(Input),
+    Values = map_values_only(det_index0(Input^mine), Assignment),
+
+    foldl_values((pred(X::in, Y::in, Prod::out) is det :-
+        Prod = X*Y), Values, 1, ProductOfMyDepartureFields).
+
+    % Maps a field to its index0 in a ticket.
+:- type assignment == map(field, int).
+
+:- func find_assignments(input) = assignment.
+find_assignments(Input) = Assignment :-
+    Assignment = map_values_only(constantly(0), Input^fields).
 
 :- type field == string.
 :- type ticket == list(int).
