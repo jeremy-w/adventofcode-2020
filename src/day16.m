@@ -34,7 +34,8 @@ nearby tickets:
     io.print_line("=== * ===", !IO).
 
 :- func part1(input) = int.
-part1(_Input) = SumOfOutOfAllRanges :-
+part1(Input) = SumOfOutOfAllRanges :-
+    trace [io(!IO)] (io.write_line({"Input", Input}, !IO)),
     SumOfOutOfAllRanges = -1.
 
 :- type field == string.
@@ -60,9 +61,22 @@ parse_input(String) = Input :-
          unexpected($module, $pred, "Bad Sections")
     ).
 
+% Field like "arrival track: 40-512 or 519-964"
 :- func parse_field(string) = assoc_list(field, ranges).
-parse_field(_Line) = Field :-
-    Field = ["thing" - ranges.empty].
+parse_field(Line) = Field :-
+    (if
+        [Name, Rules] = split_at_string(": ", strip(Line))
+     then
+        RangeStrings = split_at_string(" or ", Rules),
+        RangeList = filter_map((func(X) = Result is semidet :-
+            [Lo, Hi] = map(det_to_int, split_at_string("-", X)),
+            Result = range(Lo, Hi)), RangeStrings),
+        Ranges = foldl(union, RangeList, empty),
+        Field = [Name-Ranges]
+     else
+         unexpected($module, $pred, string.format("Bad field line %s", [s(Line)]))
+    ).
 
+% Ticket like "123,456,789"
 :- func parse_ticket(string) = ticket.
 parse_ticket(Line) = map(det_to_int, split_at_string(",", strip(Line))).
