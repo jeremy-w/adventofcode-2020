@@ -30,8 +30,9 @@ main(!IO) :-
 
 :- func part1(input) = int.
 part1(Input) = ActiveCubesAfter6Steps :-
-    trace [io(!IO)] (io.write_line({"Input", to_sorted_assoc_list(Input): list(pair(point, activity))}, !IO)),
-    ActiveCubesAfter6Steps = -1.
+    AfterSixSteps = foldl((func(_, A0) = step(A0)), 1 .. 6, Input),
+    filter(unify(active), values(AfterSixSteps), ActiveCubes),
+    ActiveCubesAfter6Steps = length(ActiveCubes).
 
 :- func cactive = char.
 cactive = '#'.
@@ -61,3 +62,33 @@ parse_input(String) = Input :-
 
 :- func insert_item(int, int, pair(int, activity), input) = input.
 insert_item(Z, Y, X - A, M0) = set(M0, point(X, Y, Z), A).
+
+:- func step(input) = input.
+step(Prev) = Next :-
+    % FIXME: this doesn't consider the frontier, only already-extant cubes. :(
+    % We really need to just generate a list of coords all around (min/max then grow by -1/+1) and then walk through them all and update, I guess.
+    % This "map and simulate" thing shows up a lot, and I'm not happy with how clumsy my approach to them has been.
+    foldl2(update_cube, Prev, Prev, _, Prev, Next).
+
+:- pred update_cube(point::in, activity::in, input::in, input::out, input::in, input::out) is det.
+update_cube(P, active, Prev, Prev, N0, N) :-
+    ActiveCount = active_around_in(P, Prev),
+    (if
+        (ActiveCount = 2; ActiveCount = 3)
+     then
+        N = N0  % still active
+     else
+         N = N0^elem(P) := inactive
+    ).
+update_cube(P, inactive, Prev, Prev, N0, N) :-
+    ActiveCount = active_around_in(P, Prev),
+    (if
+        ActiveCount = 3
+     then
+        N = N0^elem(P) := active
+     else
+        N = N0  % still inactive
+    ).
+
+:- func active_around_in(point, input) = int.
+active_around_in(P, M) = 0.  % TODO: impl
