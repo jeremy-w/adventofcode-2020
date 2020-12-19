@@ -6,7 +6,8 @@
 :- implementation.
 :- import_module char, int, list, string, util, require.
 :- import_module map, assoc_list, one_or_more.
-:- import_module solutions.
+% Argh link error.
+% :- import_module regex.
 
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
@@ -28,10 +29,11 @@ aaaabbb
     A1 = part1(parse_input(Example)),
     io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
-    % util.read_file_as_string("../input/day19.txt", Input, !IO),
-    % P1 = part1(parse_input(Input)),
-    % io.format("P1: got %d (expected ?)\n", [i(P1)], !IO),
+    util.read_file_as_string("../input/day19.txt", Input, !IO),
+    P1 = part1(parse_input(Input)),
+    io.format("P1: got %d (expected ?)\n", [i(P1)], !IO),
 
+    I1 = parse_input(Input),
     % P2 = part2(parse_input(Input)),
     % io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
 
@@ -39,8 +41,12 @@ aaaabbb
 
 :- func part1(input) = int.
 part1(Input) = ValidMessageCount :-
-    trace [io(!IO)] (io.write_line({"Input", to_sorted_assoc_list(Input^rules): assoc_list(int, a_rule)}, !IO)),
-    ValidMessageCount = 0.
+    % trace [io(!IO)] (io.write_line({"Input", to_sorted_assoc_list(Input^rules): assoc_list(int, a_rule)}, !IO)),
+    to_regex(Input^rules, Regex),
+    trace [io(!IO)] (io.write_line({"Regex", Regex}, !IO)),
+    Matching = [],
+    % filter(exact_match(Regex), Input^messages, Matching),
+    length(Matching, ValidMessageCount).
 
 % ???: it barfed on a type named "rule"? ah, it's a builtin operator. https://mercurylang.org/information/doc-release/mercury_ref/Builtin-operators.html#Builtin-operators
 :- type a_rule
@@ -62,7 +68,7 @@ parse_input(String) = Input :-
 
 :- pred parse(string::in, input::out) is semidet.
 parse(String, Input) :-
-    trace [io(!IO)] (io.write_line({"String", String}, !IO)),
+    % trace [io(!IO)] (io.write_line({"String", String}, !IO)),
     [RuleSec, MessageSec] = split_at_string("\n\n", strip(String)),
     RuleLines = split_at_string("\n", RuleSec),
     foldl(parse_rule, RuleLines, map.init, Rules),
@@ -77,7 +83,7 @@ parse(String, Input) :-
 */
 :- pred parse_rule(string::in, rules::in, rules::out) is semidet.
 parse_rule(Line, M0, M) :-
-    trace [io(!IO)] (io.write_line({"Line", Line}, !IO)),
+    % trace [io(!IO)] (io.write_line({"Line", Line}, !IO)),
     [Id, Body] = split_at_string(": ", Line),
     to_int(Id, I),
     parse_body(Body, Rule),
@@ -85,7 +91,7 @@ parse_rule(Line, M0, M) :-
 
 :- pred parse_body(string::in, a_rule::out) is det.
 parse_body(Body, Rule) :-
-    trace [io(!IO)] (io.write_line({"Body", Body}, !IO)),
+    % trace [io(!IO)] (io.write_line({"Body", Body}, !IO)),
     (if
         [H1, H2] = split_at_string(" | ", Body),
         parse_body(H1, S1),
@@ -105,3 +111,20 @@ parse_body(Body, Rule) :-
         else
             unexpected($module, $pred, format("Bogus rule body: %s", [s(Body)]))
     ).
+
+:- pred to_regex(rules::in, string::out) is det.
+to_regex(Rules, Regex) :-
+    to_regex_string(Rules, Rules^det_elem(0), RuleZeroRegexString),
+    Regex = RuleZeroRegexString.
+    % Regex = regex(RuleZeroRegexString).
+
+:- pred to_regex_string(rules::in, a_rule::in, string::out) is det.
+to_regex_string(_, literally(C), from_char_list([C])).
+to_regex_string(Rules, seq(IDs), String) :-
+    SubRules = apply_to_list(one_or_more_to_list(IDs), Rules),
+    map(to_regex_string(Rules), SubRules, SubStrings),
+    String = join_list("", SubStrings).
+to_regex_string(Rules, either(SubA, SubB), String) :-
+    to_regex_string(Rules, SubA, RegA),
+    to_regex_string(Rules, SubB, RegB),
+    String = format("(%s|%s)", [s(RegA), s(RegB)]).

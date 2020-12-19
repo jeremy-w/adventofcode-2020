@@ -31,6 +31,6 @@ CFILTER="cat"
 if [[ -x $HOME/go/bin/cfilter ]]; then
     CFILTER="$HOME/go/bin/cfilter -f ../mmc.syntax"
 fi
-mmc -E --use-subdirs -m day$DAY 2>&1 | $CFILTER
+EXTRA_LIB_DIRS="/usr/local/Cellar/mercury/20.06/extras/lib/mercury" mmc -E --use-subdirs -m day$DAY 2>&1 | $CFILTER
 "./day$DAY" < "../input/day$DAY.txt"
 rm "./day$DAY"
