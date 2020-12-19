@@ -37,8 +37,8 @@ nearby tickets:
     A2 = find_assignments(parse_input(Example)),
     io.write_line({"P2 test", "got", to_sorted_assoc_list(A2): assoc_list(field, int), "--- expected", to_sorted_assoc_list(E2): assoc_list(field, int)}, !IO),
 
-    % P2 = part2(parse_input(Input)),
-    % io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
+    P2 = part2(parse_input(Input)),
+    io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
 
     io.print_line("=== * ===", !IO).
 
@@ -85,12 +85,12 @@ find_assignments(Input) = Assignment :-
     ValuesAtIndexes: list(list(int)) = map((func(I) = map((func(L) = det_index0(L, I)), AllTickets)), FieldIndexes),
     MinValues: list(int) = map(list_min, ValuesAtIndexes),
     MaxValues: list(int) = map((func(Values) = foldl(max, Values, min_int)), ValuesAtIndexes),
+    trace [io(!IO)] (io.write_line({"MinValues", MinValues, "MaxValues", MaxValues, "AllTicketsCount", length(AllTickets): int}, !IO)),
 
     % And now it's some sort of "solve the constraints" deal where we find a maximally constrained column, try one, and backtrack as needed.
-    % But I'm kinda too tired now to keep going.
 
     % Brute force: Solve for field assignments by testing permutations till one of them succeeds for all remaining tickets.
-    % TODO: move the testing into the solutions call rather than letting it build a massive list
+    % Improvement: Move the testing into the solutions call rather than letting it build a massive list
     FieldNames = keys(SaneInput^fields),
     solutions((pred(P::out) is nondet :-
         perm(0..(length(SaneInput^mine) - 1), P),
