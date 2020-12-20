@@ -18,7 +18,7 @@
     % Returns a list of the tails of the list.
 :- func tails(list(N)) = list(list(N)).
 
-:- func constantly(int, T) = int.
+:- func constantly(Value, Ignored) = Value.
 
 :- implementation.
 :- import_module string, require.
