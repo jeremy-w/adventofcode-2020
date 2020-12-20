@@ -16,12 +16,13 @@ main(!IO) :-
 ###
 ",
     E1 = 848,
-    A1 = part2(parse_input(Example)),
+    % A1 = part2(parse_input(Example)),
+    A1 = -42,
     io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
-    % util.read_file_as_string("../input/day17.txt", Input, !IO),
-    % P1 = part2(parse_input(Input)),
-    % io.format("P2: got %d (expected 295)\n", [i(P1)], !IO),
+    util.read_file_as_string("../input/day17.txt", Input, !IO),
+    P1 = part2(parse_input(Input)),
+    io.format("P2: got %d (expected 1972)\n", [i(P1)], !IO),
 
     io.print_line("=== * ===", !IO).
 
@@ -70,7 +71,8 @@ step(Prev) = Next :-
     JustFrontier = delete_elems(WithFrontier, keys(Prev): list(point)),
     Init: input = det_insert_from_corresponding_lists(Prev, JustFrontier, map(constantly(inactive), JustFrontier): list(activity)),
     foldl2(update_cube, Init, Init, _, Init, Next),
-    trace [io(!IO), runtime(env("TRACE"))] (io.print_line("==== STEP ====", !IO), io.print_line(render(Next), !IO)).
+    trace [io(!IO)] (io.print_line("==== STEP ====", !IO)),
+    trace [io(!IO), runtime(env("TRACE"))] (io.print_line(render(Next), !IO)).
 
 :- func neighbors(point) = list(point).
 neighbors(P) = Ps :-
