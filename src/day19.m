@@ -33,7 +33,17 @@ aaaabbb
     P1 = part1(parse_input(Input)),
     io.format("P1: got %d (expected ?)\n", [i(P1)], !IO),
 
+    /* Part 2:
+    - Replace "8: 42" with  "8: 42 | 42 8", which is basically 42+ (1 or more repetitions) in regex terms.
+    - Replace "11: 42 31" with "11: 42 31 | 42 11 31", which is now no longer regular - it's a^n b^n with a = 42 and, b = 31, and n >= 1. This gets hairier, but it is supported with subroutine calls: (A(?-1)?B). This leads us to pcre2grep, I guess.
+
+    Oh, and these are the top-level rules, and only used by rule 0, which is "0: 8 11". So we can just manually render rule 0 specially for this input as 8+(42(?-1)?31).
+    */
     I1 = parse_input(Input),
+    to_regex_string(I1^rules, I1^rules^det_elem(8), Rule8),
+    to_regex_string(I1^rules, I1^rules^det_elem(42), Rule42),
+    to_regex_string(I1^rules, I1^rules^det_elem(31), Rule31),
+    io.write_line({"Part 2 special regex", string.format("^%s+(%s(?-1)?%s)$", [s(Rule8), s(Rule42), s(Rule31)]): string}, !IO),
     % P2 = part2(parse_input(Input)),
     % io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
 
@@ -43,8 +53,8 @@ aaaabbb
 part1(Input) = ValidMessageCount :-
     % trace [io(!IO)] (io.write_line({"Input", to_sorted_assoc_list(Input^rules): assoc_list(int, a_rule)}, !IO)),
     to_regex(Input^rules, Regex),
-    trace [io(!IO)] (io.write_line({"Regex", Regex}, !IO)),
-    Matching = [],
+    trace [io(!IO)] (io.write_line({"Regex", "^" ++ Regex ++ "$"}, !IO)),
+    Matching = []: list(string),
     % filter(exact_match(Regex), Input^messages, Matching),
     length(Matching, ValidMessageCount).
 
