@@ -19,7 +19,7 @@ main(!IO) :-
     A1 = part1(parse_input(Example)),
     io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
-    util.read_file_as_string("../input/day17.txt", Input, !IO),
+    % util.read_file_as_string("../input/day17.txt", Input, !IO),
     % P1 = part1(parse_input(Input)),
     % io.format("P1: got %d (expected ?)\n", [i(P1)], !IO),
 
@@ -30,6 +30,7 @@ main(!IO) :-
 
 :- func part1(input) = int.
 part1(Input) = ActiveCubesAfter6Steps :-
+    trace [io(!IO)] (io.print_line(render(Input), !IO)),
     AfterSixSteps = foldl((func(_, A0) = step(A0)), 1 .. 6, Input),
     filter(unify(active), values(AfterSixSteps), ActiveCubes),
     ActiveCubesAfter6Steps = length(ActiveCubes).
@@ -65,10 +66,28 @@ insert_item(Z, Y, X - A, M0) = set(M0, point(X, Y, Z), A).
 
 :- func step(input) = input.
 step(Prev) = Next :-
-    % FIXME: this doesn't consider the frontier, only already-extant cubes. :(
-    % We really need to just generate a list of coords all around (min/max then grow by -1/+1) and then walk through them all and update, I guess.
-    % This "map and simulate" thing shows up a lot, and I'm not happy with how clumsy my approach to them has been.
-    foldl2(update_cube, Prev, Prev, _, Prev, Next).
+    % Extend the map with all neighbors set to inactive.
+    AllNeighbors = condense(map(neighbors, keys(Prev))),
+    remove_dups(AllNeighbors, WithFrontier),
+    JustFrontier = delete_elems(WithFrontier, keys(Prev): list(point)),
+    Init: input = det_insert_from_corresponding_lists(Prev, JustFrontier, map(constantly(inactive), JustFrontier): list(activity)),
+    foldl2(update_cube, Prev, Init, _, Init, Next),
+    trace [io(!IO)] (io.print_line("==== STEP ====", !IO), io.print_line(render(Next), !IO)).
+
+:- func neighbors(point) = list(point).
+neighbors(P) = Ps :-
+    solutions(neighbor(P), Ps).
+
+:- pred neighbor(point::in, point::out) is nondet.
+neighbor(point(X, Y, Z)@P1, point(X2, Y2, Z2)@P2) :-
+    R = -1 .. 1,
+    member(Dx, R),
+    member(Dy, R),
+    member(Dz, R),
+    X2 = X + Dx,
+    Y2 = Y + Dy,
+    Z2 = Z + Dz,
+    not P1 = P2.
 
 :- pred update_cube(point::in, activity::in, input::in, input::out, input::in, input::out) is det.
 update_cube(P, active, Prev, Prev, N0, N) :-
@@ -91,4 +110,37 @@ update_cube(P, inactive, Prev, Prev, N0, N) :-
     ).
 
 :- func active_around_in(point, input) = int.
-active_around_in(P, M) = 0.  % TODO: impl
+active_around_in(P, M) = Count :-
+    Neighbors = neighbors(P),
+    % trace [io(!IO)] (io.write_line({"P", P, "M", keys(M): list(point)}, !IO)),
+    Activities = apply_to_list(Neighbors, M),
+    filter(unify(active), Activities, Actives),
+    length(Actives, Count).  % TODO: impl
+
+:- func render(input) = string.
+render(Input) = Output :-
+    {ZMin, ZMax} = range_in_axis(((func(P) = z(P))), Input),
+    {XMin, XMax} = range_in_axis(((func(P) = x(P))), Input),
+    {YMin, YMax} = range_in_axis(((func(P) = y(P))), Input),
+    Sections = map(render_z(Input, YMin .. YMax, XMin .. XMax), ZMin .. ZMax),
+    Output = join_list("\n\n", Sections).
+
+:- func range_in_axis(func(point) = int, input) = {int, int}.
+range_in_axis(Selector, Input) = {Min, Max} :-
+    Zs = sort(map(Selector, keys(Input))),
+    Min = det_head(Zs),
+    Max = det_last(Zs).
+
+:- func render_z(input, list(int), list(int), int) = string.
+render_z(Input, Ys, _Xs, Z) = Level :-
+    Label = string.format("z=%d", [i(Z)]),
+    filter((pred(P::in) is semidet :- z(P) = Z), keys(Input), Points),
+    Rows = map((func(Y) = sort(filter((pred(P::in) is semidet :- y(P) = Y), Points))), Ys),
+    RowsActivities = map((func(Row) = apply_to_list(Row, Input)), Rows),
+    RowChars = map(map(activity_char), RowsActivities),
+    RowStrings = map(from_char_list, RowChars),
+    Level = join_list("\n", [Label | RowStrings]).
+
+:- func activity_char(activity) = char.
+activity_char(active) = cactive.
+activity_char(inactive) = cinactive.
