@@ -19,9 +19,9 @@ main(!IO) :-
     A1 = part1(parse_input(Example)),
     io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
-    % util.read_file_as_string("../input/day17.txt", Input, !IO),
-    % P1 = part1(parse_input(Input)),
-    % io.format("P1: got %d (expected ?)\n", [i(P1)], !IO),
+    util.read_file_as_string("../input/day17.txt", Input, !IO),
+    P1 = part1(parse_input(Input)),
+    io.format("P1: got %d (expected ?)\n", [i(P1)], !IO),
 
     % P2 = part2(parse_input(Input)),
     % io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
@@ -30,7 +30,7 @@ main(!IO) :-
 
 :- func part1(input) = int.
 part1(Input) = ActiveCubesAfter6Steps :-
-    trace [io(!IO)] (io.print_line(render(Input), !IO)),
+    trace [io(!IO), runtime(env("TRACE"))] (io.print_line(render(Input), !IO)),
     AfterSixSteps = foldl((func(_, A0) = step(A0)), 1 .. 6, Input),
     filter(unify(active), values(AfterSixSteps), ActiveCubes),
     ActiveCubesAfter6Steps = length(ActiveCubes).
@@ -71,8 +71,8 @@ step(Prev) = Next :-
     remove_dups(AllNeighbors, WithFrontier),
     JustFrontier = delete_elems(WithFrontier, keys(Prev): list(point)),
     Init: input = det_insert_from_corresponding_lists(Prev, JustFrontier, map(constantly(inactive), JustFrontier): list(activity)),
-    foldl2(update_cube, Prev, Init, _, Init, Next),
-    trace [io(!IO)] (io.print_line("==== STEP ====", !IO), io.print_line(render(Next), !IO)).
+    foldl2(update_cube, Init, Init, _, Init, Next),
+    trace [io(!IO), runtime(env("TRACE"))] (io.print_line("==== STEP ====", !IO), io.print_line(render(Next), !IO)).
 
 :- func neighbors(point) = list(point).
 neighbors(P) = Ps :-
@@ -113,10 +113,22 @@ update_cube(P, inactive, Prev, Prev, N0, N) :-
 active_around_in(P, M) = Count :-
     Neighbors = neighbors(P),
     % trace [io(!IO)] (io.write_line({"P", P, "M", keys(M): list(point)}, !IO)),
-    Activities = apply_to_list(Neighbors, M),
+    % apply_to_list throws if an elem is not in the list, but we instead want to return inactive.
+    Activities = apply_to_list_with_default(Neighbors, M, inactive),
     filter(unify(active), Activities, Actives),
     length(Actives, Count).  % TODO: impl
 
+:- func apply_to_list_with_default(list(K), map(K, V), V) = list(V).
+apply_to_list_with_default([], _M, _Default) = [].
+apply_to_list_with_default([H | T], M, Default) = (if
+    V = search(M, H)
+ then
+    [V | apply_to_list_with_default(T, M, Default)]
+ else
+     [Default | apply_to_list_with_default(T, M, Default)]
+).
+%-----------------------------------------------------------------------------%
+% RENDERING
 :- func render(input) = string.
 render(Input) = Output :-
     {ZMin, ZMax} = range_in_axis(((func(P) = z(P))), Input),
@@ -144,3 +156,5 @@ render_z(Input, Ys, _Xs, Z) = Level :-
 :- func activity_char(activity) = char.
 activity_char(active) = cactive.
 activity_char(inactive) = cinactive.
+%-----------------------------------------------------------------------------%
+%-----------------------------------------------------------------------------%
