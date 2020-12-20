@@ -35,19 +35,71 @@ aaaabbb
 
     /* Part 2:
     - Replace "8: 42" with  "8: 42 | 42 8", which is basically 42+ (1 or more repetitions) in regex terms.
-    - Replace "11: 42 31" with "11: 42 31 | 42 11 31", which is now no longer regular - it's a^n b^n with a = 42 and, b = 31, and n >= 1. This gets hairier, but it is supported with subroutine calls: (A(?-1)?B). This leads us to pcre2grep, I guess.
+    - Replace "11: 42 31" with "11: 42 31 | 42 11 31", which is now no longer regular - it's a^n b^n with a = 42 and, b = 31, and n >= 1. This gets hairier, but it is supported with subroutine calls: (?<Eleven>A(?>Eleven)?B). This leads us to pcre2grep + wc -l.
 
-    Oh, and these are the top-level rules, and only used by rule 0, which is "0: 8 11". So we can just manually render rule 0 specially for this input as 8+(42(?-1)?31).
+    Oh, and these are the top-level rules, and only used by rule 0, which is "0: 8 11". So we can just manually render rule 0 specially for this input as 8+(?<N>42(?>N)?31), yay!
     */
+    R = part2("42: 9 14 | 10 1
+9: 14 27 | 1 26
+10: 23 14 | 28 1
+1: \"a\"
+11: 42 31
+5: 1 14 | 15 1
+19: 14 1 | 14 14
+12: 24 14 | 19 1
+16: 15 1 | 14 14
+31: 14 17 | 1 13
+6: 14 14 | 1 14
+2: 1 24 | 14 4
+0: 8 11
+13: 14 3 | 1 12
+15: 1 | 14
+17: 14 2 | 1 7
+23: 25 1 | 22 14
+28: 16 1
+4: 1 1
+20: 14 14 | 1 15
+3: 5 14 | 16 1
+27: 1 6 | 14 18
+14: \"b\"
+21: 14 1 | 1 14
+25: 1 1 | 1 14
+22: 14 14
+8: 42
+26: 14 22 | 1 20
+18: 15 15
+7: 14 5 | 1 21
+24: 14 1
+
+abbbbbabbbaaaababbaabbbbabababbbabbbbbbabaaaa
+bbabbbbaabaabba
+babbbbaabbbbbabbbbbbaabaaabaaa
+aaabbbbbbaaaabaababaabababbabaaabbababababaaa
+bbbbbbbaaaabbbbaaabbabaaa
+bbbababbbbaaaaaaaabbababaaababaabab
+ababaaaaaabaaab
+ababaaaaabbbaba
+baabbaaaabbaaaababbaababb
+abbbbabbbbaaaababbbbbbaaaababb
+aaaaabbaabaaaaababaa
+aaaabbaaaabbaaa
+aaaabbaabbaaaaaaabbbabbbaaabbaabaaa
+babaaabbbaaabaababbaabababaaab
+aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba"),
+    io.write_line({"P2 example regex:", R}, !IO),
+    P2 = part2(Input),
+    io.write_line({"P2 regex:", P2}, !IO),
+    % io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
+
+    io.print_line("=== * ===", !IO).
+
+:- func part2(string) = string.
+part2(Input) = R :-
     I1 = parse_input(Input),
     to_regex_string(I1^rules, I1^rules^det_elem(8), Rule8),
     to_regex_string(I1^rules, I1^rules^det_elem(42), Rule42),
     to_regex_string(I1^rules, I1^rules^det_elem(31), Rule31),
-    io.write_line({"Part 2 special regex", string.format("^%s+(%s(?-1)?%s)$", [s(Rule8), s(Rule42), s(Rule31)]): string}, !IO),
-    % P2 = part2(parse_input(Input)),
-    % io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
-
-    io.print_line("=== * ===", !IO).
+    R = string.format("^%s+(?P<Eleven>%s(?P>Eleven)?%s)$", [s(Rule8), s(Rule42), s(Rule31)]).
 
 :- func part1(input) = int.
 part1(Input) = ValidMessageCount :-
