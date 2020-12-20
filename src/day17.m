@@ -7,6 +7,7 @@
 :- import_module char, int, list, string, util, require.
 :- import_module map, assoc_list, pair, ranges.
 :- import_module solutions, set.
+:- import_module regex.
 
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
@@ -19,6 +20,8 @@ main(!IO) :-
     % A1 = part2(parse_input(Example)),
     A1 = -42,
     io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
+
+    Reg = regex("abc"),
 
     util.read_file_as_string("../input/day17.txt", Input, !IO),
     P1 = part2(parse_input(Input)),

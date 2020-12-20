@@ -1,0 +1,55 @@
+## Linking Problems
+
+- mmc --make appears not to pass libraries used from EXTRA_LIB_DIRS to the linker, so it barfs with "symbols not found" (Ex. A).
+- Passing -l regex on the command line gets us closer - it then barfs at launch. Sounds like an issue with rpath perhaps? (Ex. B)
+
+Learned so far:
+
+- The correct library, in the correct arch (x86_64) and grade (hlc.gc), with the correct function appears to be present, so it's just some issue wiring everything up.
+- `ml --print*` flags are really handy!
+- You can override linker commands to include `-v` and get verbose info from clang.
+
+### Exhibit A: No -lregex!
+```
+Making day17
+** Error making `day17'.
+Apple clang version 12.0.0 (clang-1200.0.32.28)
+Target: x86_64-apple-darwin19.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+ "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld" -demangle -lto_library /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libLTO.dylib -dynamic -arch x86_64 -platform_version macos 10.15.0 10.15.6 -syslibroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -o day17 -L/usr/local/Cellar/mercury/20.06/lib/mercury/lib -L/usr/local/Cellar/mercury/20.06/extras/lib/mercury/lib/hlc.gc -L/usr/local/Cellar/mercury/20.06/lib/mercury/lib/hlc.gc -L/usr/local/lib Mercury/os/day17_init.o Mercury/os/day17.o Mercury/os/util.o -lmer_std -lmer_rt -lgc -lm -lSystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/12.0.0/lib/darwin/libclang_rt.osx.a
+Undefined symbols for architecture x86_64:
+  "<function 'regex.regex'/1 mode 0>", referenced from:
+      <predicate 'main'/2 mode 0> in day17.o
+ld: symbol(s) not found for architecture x86_64
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+The terminal process "./adventofcode-2020/run-day '/Users/jeremy/git/aoc-mercury/adventofcode-2020/src/day17.m'" failed to launch (exit code: 1).
+```
+
+### Exhibit B: Builds, links, fails at launch
+```
+Making day17
+Apple clang version 12.0.0 (clang-1200.0.32.28)
+Target: x86_64-apple-darwin19.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+ "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld" -demangle -lto_library /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libLTO.dylib -dynamic -arch x86_64 -platform_version macos 10.15.0 10.15.6 -syslibroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -o day17 -L/usr/local/Cellar/mercury/20.06/lib/mercury/lib -L/usr/local/Cellar/mercury/20.06/extras/lib/mercury/lib/hlc.gc -L/usr/local/Cellar/mercury/20.06/lib/mercury/lib/hlc.gc -L/usr/local/lib Mercury/os/day17_init.o Mercury/os/day17.o Mercury/os/util.o -lregex -lmer_std -lmer_rt -lgc -lm -lSystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/12.0.0/lib/darwin/libclang_rt.osx.a
+dyld: Library not loaded: /usr/local/Cellar/mercury/20.06/lib/mercury/lib/hlc.gc/libregex.dylib
+  Referenced from: /Users/jeremy/git/aoc-mercury/adventofcode-2020/src/./day17
+  Reason: image not found
+./adventofcode-2020/run-day: line 35: 78510 Abort trap: 6           "./day$DAY" < "../input/day$DAY.txt"
+The terminal process "./adventofcode-2020/run-day '/Users/jeremy/git/aoc-mercury/adventofcode-2020/src/day17.m'" terminated with exit code: 134.
+```
+
+And apparently that's because it's linking to it as if it were in the default lib path, not in one of the EXTRA_LIB_DIRS!
+**The libregex path has 20.06/lib when it should have 20.06/extras/lib.**
+
+```
+> otool -L src/day17
+src/day17:
+	/usr/local/Cellar/mercury/20.06/lib/mercury/lib/hlc.gc/libregex.dylib (compatibility version 0.0.0, current version 0.0.0)
+	/usr/local/opt/mercury/lib/mercury/lib/hlc.gc/libmer_std.dylib (compatibility version 0.0.0, current version 0.0.0)
+	/usr/local/opt/mercury/lib/mercury/lib/hlc.gc/libmer_rt.dylib (compatibility version 0.0.0, current version 0.0.0)
+	/usr/local/opt/mercury/lib/mercury/lib/libgc.dylib (compatibility version 0.0.0, current version 0.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1281.100.1)
+```
