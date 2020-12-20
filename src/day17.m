@@ -15,21 +15,18 @@ main(!IO) :-
 ..#
 ###
 ",
-    E1 = 112,
-    A1 = part1(parse_input(Example)),
+    E1 = 848,
+    A1 = part2(parse_input(Example)),
     io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
-    util.read_file_as_string("../input/day17.txt", Input, !IO),
-    P1 = part1(parse_input(Input)),
-    io.format("P1: got %d (expected ?)\n", [i(P1)], !IO),
-
-    % P2 = part2(parse_input(Input)),
-    % io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
+    % util.read_file_as_string("../input/day17.txt", Input, !IO),
+    % P1 = part2(parse_input(Input)),
+    % io.format("P2: got %d (expected 295)\n", [i(P1)], !IO),
 
     io.print_line("=== * ===", !IO).
 
-:- func part1(input) = int.
-part1(Input) = ActiveCubesAfter6Steps :-
+:- func part2(input) = int.
+part2(Input) = ActiveCubesAfter6Steps :-
     trace [io(!IO), runtime(env("TRACE"))] (io.print_line(render(Input), !IO)),
     AfterSixSteps = foldl((func(_, A0) = step(A0)), 1 .. 6, Input),
     filter(unify(active), values(AfterSixSteps), ActiveCubes),
@@ -42,7 +39,7 @@ cactive = '#'.
 cinactive = det_from_int(0'.). %'
 
 :- type activity ---> active; inactive.
-:- type point ---> point(x::int, y::int, z::int).
+:- type point ---> point(x::int, y::int, z::int, w::int).
 :- type input == map(point, activity).
 
 :- func parse_input(string) = input.
@@ -52,17 +49,18 @@ parse_input(String) = Input :-
     NCols: int = length(det_head(Lines)),
     Activities = map((func(Line) = map((func(X) = (if X = cactive then active else inactive)), Line)), Lines),
 
+    W = 0,
     Z = 0,
 
     Xs = 0 .. (NCols - 1),
     XToAs: list(assoc_list(int, activity)) = map(from_corresponding_lists(Xs), Activities),
 
     Ys = 0 .. (NRows - 1),
-    InsertRow = (func(Y, XToA, M0) = foldl(insert_item(Z, Y), XToA, M0)),
+    InsertRow = (func(Y, XToA, M0) = foldl(insert_item(W, Z, Y), XToA, M0)),
     Input = foldl_corresponding(InsertRow, Ys, XToAs, map.init).
 
-:- func insert_item(int, int, pair(int, activity), input) = input.
-insert_item(Z, Y, X - A, M0) = set(M0, point(X, Y, Z), A).
+:- func insert_item(int, int, int, pair(int, activity), input) = input.
+insert_item(W, Z, Y, X - A, M0) = set(M0, point(X, Y, Z, W), A).
 
 :- func step(input) = input.
 step(Prev) = Next :-
@@ -79,14 +77,16 @@ neighbors(P) = Ps :-
     solutions(neighbor(P), Ps).
 
 :- pred neighbor(point::in, point::out) is nondet.
-neighbor(point(X, Y, Z)@P1, point(X2, Y2, Z2)@P2) :-
+neighbor(point(X, Y, Z, W)@P1, point(X2, Y2, Z2, W2)@P2) :-
     R = -1 .. 1,
     member(Dx, R),
     member(Dy, R),
     member(Dz, R),
+    member(Dw, R),
     X2 = X + Dx,
     Y2 = Y + Dy,
     Z2 = Z + Dz,
+    W2 = W + Dw,
     not P1 = P2.
 
 :- pred update_cube(point::in, activity::in, input::in, input::out, input::in, input::out) is det.
