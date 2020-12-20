@@ -6,7 +6,7 @@
 :- implementation.
 :- import_module char, int, list, string, util, require.
 :- import_module map, assoc_list, pair, ranges.
-:- import_module solutions.
+:- import_module solutions, set.
 
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
@@ -66,10 +66,10 @@ insert_item(W, Z, Y, X - A, M0) = set(M0, point(X, Y, Z, W), A).
 :- func step(input) = input.
 step(Prev) = Next :-
     % Extend the map with all neighbors set to inactive.
-    AllNeighbors = condense(map(neighbors, keys(Prev))),
-    remove_dups(AllNeighbors, WithFrontier),
-    JustFrontier = delete_elems(WithFrontier, keys(Prev): list(point)),
-    Init: input = det_insert_from_corresponding_lists(Prev, JustFrontier, map(constantly(inactive), JustFrontier): list(activity)),
+    WithFrontier = union_list(map(set.from_list, map(neighbors, keys(Prev)))),
+    JustFrontier = set.delete_list(WithFrontier, keys(Prev): list(point)),
+    FrontierList = to_sorted_list(JustFrontier),
+    Init: input = det_insert_from_corresponding_lists(Prev, FrontierList, map(constantly(inactive), FrontierList): list(activity)),
     foldl2(update_cube, Init, Init, _, Init, Next),
     trace [io(!IO)] (io.print_line("==== STEP ====", !IO)),
     trace [io(!IO), runtime(env("TRACE"))] (io.print_line(render(Next), !IO)).
