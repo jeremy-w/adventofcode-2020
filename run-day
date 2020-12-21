@@ -31,6 +31,14 @@ CFILTER="cat"
 if [[ -x $HOME/go/bin/cfilter ]]; then
     CFILTER="$HOME/go/bin/cfilter -f ../mmc.syntax"
 fi
-EXTRA_LIB_DIRS="/usr/local/Cellar/mercury/20.06/extras/lib/mercury" mmc --link-executable-command="clang -v" -l regex -E --use-subdirs -m day$DAY 2>&1 | $CFILTER
+# To debug linking an executable, pass:  --link-executable-command="clang -v"
+# To debug ALL the things, pass:     --verbose-commands
+EXTRA_LIB_DIRS="/usr/local/Cellar/mercury/20.06/extras/lib/mercury" \
+EXTRA_LIBRARIES="regex" \
+mmc \
+    --no-max-error-line-width \
+    --output-compile-error-lines 128 \
+    --use-subdirs \
+    --make day$DAY 2>&1 | $CFILTER
 "./day$DAY" < "../input/day$DAY.txt"
 rm "./day$DAY"

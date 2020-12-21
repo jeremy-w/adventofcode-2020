@@ -2,6 +2,8 @@
 
 - mmc --make appears not to pass libraries used from EXTRA_LIB_DIRS to the linker, so it barfs with "symbols not found" (Ex. A).
 - Passing -l regex on the command line gets us closer - it then barfs at launch. Sounds like an issue with rpath perhaps? (Ex. B)
+    - Read the section on using libs and replaced the explicit -l flag with an EXTRA_LIBRARIES env var. No difference in the final output though - same bad path.
+    - The Mercury.options file does not appear to be doing what I thought it would WRT including the regex lib, so I passed it directly.
 
 Learned so far:
 
