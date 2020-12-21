@@ -7,6 +7,19 @@
 :- interface.
 :- type has_field ---> has_field(f :: int).
 
+%-----------------------------------------------------------------------------%
+% THE MISSING PIECE: Declare some modes!
+% Only actually you have to declare the funcs:
+%
+% ex_field_hofs.m:016: Error: `:- mode' declaration for function `f'/1
+% ex_field_hofs.m:016:   without corresponding `:- func' declaration.
+% ex_field_hofs.m:016: Inferred :- func f(ex_field_hofs.has_field) = int.
+% ex_field_hofs.m:016: Error: no determinism declaration for exported function `f'/1.
+% :- mode f(in) = out is det.
+% :- mode 'f :='(in, in) = out is det.
+:- func f(has_field) = int.
+:- func 'f :='(has_field, int) = has_field.
+
 :- implementation.
 :- import_module int.
 :- import_module list.
@@ -34,8 +47,8 @@ access_example2(Hs) = map(ex_field_hofs.f, Hs).
     %       error: undefined symbol `^ f'/0
     % Trying without the single quotes (not shown here) instead gives:
     %       error: undefined symbol `^'/1.
-:- func access_example3(list(has_field)) = list(int).
-access_example3(Hs) = map('^ f', Hs).
+% :- func access_example3(list(has_field)) = list(int).
+% access_example3(Hs) = map('^ f', Hs).
 
 %-----------------------------------------------------------------------------%
 % UPDATE EXAMPLE
