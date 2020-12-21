@@ -38,8 +38,8 @@ nearby tickets:
     io.write_line({"P2 test: got:", to_sorted_assoc_list(A2): assoc_list(field, int)},!IO),
     io.write_line({"P2 test: exp:", to_sorted_assoc_list(E2): assoc_list(field, int)}, !IO),
 
-    % P2 = part2(parse_input(Input)),
-    % io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
+    P2 = part2(parse_input(Input)),
+    io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
 
     io.print_line("=== * ===", !IO).
 
@@ -91,12 +91,45 @@ find_assignments(Input) = Assignment :-
     % And now it's some sort of "solve the constraints" deal where we find a maximally constrained column, try one, and backtrack as needed.
     % Exploit that each round through, only 1 of the remaining pool will have a match.
     FieldNames = keys(SaneInput^fields),
-    foldl(assign_one(SaneInput^fields, AllTickets), FieldNames, init, Assignment).
+    foldl(assign_one(SaneInput), FieldNames, init, Assignment).
 
-    % Given the rules, the valid tickets, some field name (ignored), and an accumulator for the assignments so far, assigns one field.
-:- pred assign_one(map(field, ranges)::in, list(ticket)::in, string::in, assignment::in, assignment::out) is det.
-assign_one(Rules, Tickets, _, Prev, Next) :-
-    Next = Prev.
+    % Given the input with only valid tickets, some field name (ignored), and an accumulator for the assignments so far, assigns one field.
+:- pred assign_one(input::in, string::in, assignment::in, assignment::out) is det.
+assign_one(Input, _, Prev, Next) :-
+    delete_elems(keys(Input^fields), keys(Prev), RemainingFieldNames: list(string)),
+    Indexes = 0 .. (count(Input^fields) - 1),
+    % Find the one that fits at only 1 of the remaining unclaimed indexes.
+    UnclaimedIndexes = delete_elems(Indexes, values(Prev)),
+    % trace [io(!IO)] (io.write_line({"UnclaimedIndexes", UnclaimedIndexes}, !IO)),
+    Matches = (func(FieldName: string) = Result: {string, list(int)} :-
+            Matched = filter(fits_at_index(Input, FieldName), UnclaimedIndexes),
+            {FieldName, Matched} = Result
+        ),
+    FieldToValidIndexes = map(Matches, RemainingFieldNames),
+    % trace [io(!IO)] (io.write_line({"FieldToValidIndexes", FieldToValidIndexes}, !IO)),
+    (if
+        find_first_match((pred({_FieldName, Ixs}::in) is semidet :-
+            length(Ixs, 1)), FieldToValidIndexes, {Field, [IndexToAssign]})
+     then
+        Next = Prev^elem(Field) := IndexToAssign,
+        trace [io(!IO)] (io.write_line({"Assigned", Field, IndexToAssign}, !IO))
+     else
+         sorry($module, $pred, "i was wrong")
+    ).
+
+:- pred fits_at_index(input::in, string::in, int::in) is semidet.
+fits_at_index(Input, FieldName, Index) :-
+    Range = Input^fields^elem(FieldName),
+    Tickets = [Input^mine | Input^nearby],
+    Values = map((func(Ns) = det_index0(Ns, Index)), Tickets),
+    OutOfRange = negated_filter((pred(X::in) is semidet :- member(X, Range)), Values),
+    OutOfRange = [].
+
+:- func delete_index0s(list(int), list(T)) = list(T).
+delete_index0s(Index0s, List) = Result :-
+    AllIndexes = 0 .. (length(List) - 1),
+    delete_elems(AllIndexes, Index0s, KeepIndexes),
+    Result = map(det_index0(List), KeepIndexes).
 
 :- func brute_force_assignments(input) = assignment.
 brute_force_assignments(Input) = Assignment :-
@@ -119,11 +152,13 @@ brute_force_assignments(Input) = Assignment :-
 fits_input(Input, Assignment) :-
     all_true(fits(Input^fields, Assignment), [Input^mine | Input^nearby]).
 
+    % Succeeds if the assignment works as a labeling for this ticket.
 :- pred fits(map(field, ranges)::in, assignment::in, ticket::in) is semidet.
 fits(Fields, Assignment, Ticket) :-
     FieldToValue = ticket_fields(Ticket, Assignment),
     all_true((pred(Key::in) is semidet :- member(FieldToValue^elem(Key), Fields^elem(Key))), keys(Fields)).
 
+    % Returns a map from field name to value for the ticket per the assignment.
 :- func ticket_fields(ticket, assignment) = map(field, int).
 ticket_fields(Ticket, Assignment) = map_values_only(det_index0(Ticket), Assignment).
 
