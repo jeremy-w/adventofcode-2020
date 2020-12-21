@@ -35,10 +35,11 @@ nearby tickets:
 
     E2: assignment = map.from_assoc_list(["row" - 0, "class" - 1, "seat" - 2]),
     A2 = find_assignments(parse_input(Example)),
-    io.write_line({"P2 test", "got", to_sorted_assoc_list(A2): assoc_list(field, int), "--- expected", to_sorted_assoc_list(E2): assoc_list(field, int)}, !IO),
+    io.write_line({"P2 test: got:", to_sorted_assoc_list(A2): assoc_list(field, int)},!IO),
+    io.write_line({"P2 test: exp:", to_sorted_assoc_list(E2): assoc_list(field, int)}, !IO),
 
-    P2 = part2(parse_input(Input)),
-    io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
+    % P2 = part2(parse_input(Input)),
+    % io.format("P2: got %d (expected ?)\n", [i(P2)], !IO),
 
     io.print_line("=== * ===", !IO).
 
@@ -88,7 +89,19 @@ find_assignments(Input) = Assignment :-
     trace [io(!IO)] (io.write_line({"MinValues", MinValues, "MaxValues", MaxValues, "AllTicketsCount", length(AllTickets): int}, !IO)),
 
     % And now it's some sort of "solve the constraints" deal where we find a maximally constrained column, try one, and backtrack as needed.
+    % Exploit that each round through, only 1 of the remaining pool will have a match.
+    FieldNames = keys(SaneInput^fields),
+    foldl(assign_one(SaneInput^fields, AllTickets), FieldNames, init, Assignment).
 
+    % Given the rules, the valid tickets, some field name (ignored), and an accumulator for the assignments so far, assigns one field.
+:- pred assign_one(map(field, ranges)::in, list(ticket)::in, string::in, assignment::in, assignment::out) is det.
+assign_one(Rules, Tickets, _, Prev, Next) :-
+    Next = Prev.
+
+:- func brute_force_assignments(input) = assignment.
+brute_force_assignments(Input) = Assignment :-
+    % Throw out invalid tickets.
+    SaneInput = Input^nearby := filter(all_true(in_range(megarange(Input))), Input^nearby),
     % Brute force: Solve for field assignments by testing permutations till one of them succeeds for all remaining tickets.
     % Improvement: Move the testing into the solutions call rather than letting it build a massive list
     FieldNames = keys(SaneInput^fields),
