@@ -29,6 +29,13 @@ main(!IO) :-
 part1(_Input) = S :-
     S = init.
 
+/*
+In part 1, we actually only care about edge tiles, so we could just treat a tile as a list of 4 rows matching the outer edge spots.
+Rotation is then rotation of the list, and flipping is swapping top/bottom or left/right indexes.
+(And uh I guess flipping left-to-right is different from top-to-bottom, whoops.)
+If we're lucky, this is like day 16 part 2 where there's always an unambiguous compatibility.
+Sure looks like it from a quick skim.
+*/
 
 %-----------------------------------------------------------------------------%
 % INPUT HANDLING
