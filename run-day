@@ -26,11 +26,20 @@ if [[ $1 =~ day([0-9]+) ]]; then
 fi
 
 cd "$DIR"
-# XXX: Homebrew's build is not compiled in any grade that supports debugging. :(
+
 CFILTER="cat"
 if [[ -x $HOME/go/bin/cfilter ]]; then
     CFILTER="$HOME/go/bin/cfilter -f ../mmc.syntax"
 fi
-EXTRA_LIB_DIRS="/usr/local/Cellar/mercury/20.06/extras/lib/mercury" mmc -E --use-subdirs -m day$DAY 2>&1 | $CFILTER
+
+# Removing the line width limit improves inline error reporting in VS Code.
+# Increasing the max lines from 15 to 128 also improves it, esp when there's a type confusion and it blows up to like 50 lines for a single issue.
+EXTRA_LIB_DIRS="/usr/local/Cellar/mercury/20.06/extras/lib/mercury" \
+mmc \
+    --verbose-error-messages \
+    --no-max-error-line-width \
+    --output-compile-error-lines 1024 \
+    --use-subdirs \
+    --make day$DAY 2>&1 | $CFILTER
 "./day$DAY" < "../input/day$DAY.txt"
 rm "./day$DAY"
