@@ -37,20 +37,36 @@ part1(_Input) = S :-
 :- type input == list(tile).
 
 :- func parse_input(string) = input.
-parse_input(String) = Result :-
-    Result = [].
+parse_input(String) = Tiles :-
+    Secs = split_at_string("\n\n", strip(String)),
+    Tiles = filter_map(parse_tile, Secs),
+    expect(unify(length(Tiles): int, length(Secs)), $module, "Failed to parse a tile").
+
+:- func parse_tile(string) = tile is semidet.
+parse_tile(String) = Tile :-
+    [Label | TileLines] = split_at_string("\n", String),
+    [_, IDColon] = words(Label),
+    left(IDColon, length(IDColon) - 1, IDString),
+    ID = det_to_int(IDString),
+    Tile = tile(ID, TileLines).
 
 %-----------------------------------------------------------------------------%
 % OUTPUT HANDLING
+% 0-0 through 11-11.
+:- type point ---> point(x::int, y::int).
 :- type loc ---> loc(
-            % 0-0 through 11-11.
-        x :: int, y :: int,
+            % The tile at the point.
+        tile_id :: tile_id,
             % Clockwise rotation count, 0 .. 3.
         rotated :: int,
             % Whether it's flipped over or not.
         is_flipped :: bool
-    ).
-:- type solution == map(loc, int).
+        ).
+:- func tile_id(loc) = tile_id.
+:- type solution == map(point, loc).
 
 :- func corner_tile_ids(solution) = list(tile_id).
-corner_tile_ids(_Solution) = [0].
+corner_tile_ids(Solution) = map(tile_id,
+    apply_to_list(
+        [point(0, 0), point(0, 11), point(11, 0), point(11, 11)],
+        Solution)).
