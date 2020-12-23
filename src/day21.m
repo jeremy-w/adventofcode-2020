@@ -23,7 +23,12 @@ sqjhc mxmxvkd sbzzf (contains fish)",
     util.read_file_as_string("../input/day21.txt", InputString, !IO),
     Problem1 = parse_input(InputString),
     P1Answer = part1(Problem1),
-    io.format("P1: got %d\n", [i(P1Answer)], !IO),
+    io.format("P1: got %d (expected 2410)\n", [i(P1Answer)], !IO),
+
+    P2Test = part2(Example1),
+    io.format("P2 test: expected %s, got %s\n", [s("mxmxvkd,sqjhc,fvjkl"), s(P2Test)], !IO),
+    P2Answer = part2(Problem1),
+    io.format("P2: got %s\n", [s(P2Answer)], !IO),
     io.print_line("=== * ===", !IO).
 
 :- func part1(problem) = int.
@@ -31,8 +36,15 @@ part1(Foods) = SumOfNonAllergenAppearances :-
    AllergenIngredients: list(ingredient) = map.values(determine_allergens(Foods)^assigned),
    AllIngredients = condense(map((func(F) = F^ingredients), Foods)),
    NonAllergenIngredients = list.delete_elems(AllIngredients, AllergenIngredients),
-    trace [io(!IO)] (io.write_line({"AllergenIngredients", AllergenIngredients, "NonAllergenIngredients", NonAllergenIngredients}, !IO)),
+    % trace [io(!IO)] (io.write_line({"AllergenIngredients", AllergenIngredients, "NonAllergenIngredients", NonAllergenIngredients}, !IO)),
     SumOfNonAllergenAppearances = length(NonAllergenIngredients).
+
+:- func part2(problem) = string.
+part2(Foods) = IngredientsSortedByAllergen :-
+    AssocList = to_sorted_assoc_list(determine_allergens(Foods)^assigned),
+    trace [io(!IO)] (io.write_line({"Allergens", keys(AssocList): list(string)}, !IO)),
+    Ingredients = values(AssocList),
+    IngredientsSortedByAllergen = string.join_list(",", Ingredients).
 
 :- type problem == list(food).
 :- type food ---> food(ingredients :: list(string), allergens:: list(string)).
