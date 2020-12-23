@@ -34,7 +34,7 @@ Player 2:
     GameStarts = parse_input(InputString),
     GameEnds = part1(GameStarts),
     P1 = score(GameEnds),
-    io.format("P1: got %d\n", [i(P1)], !IO),
+    io.format("P1: got %d (expected 30780)\n", [i(P1)], !IO),
 
     io.print_line("=== * ===", !IO).
 
