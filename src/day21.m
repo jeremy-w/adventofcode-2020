@@ -7,7 +7,7 @@
 :- implementation.
 :- import_module bool, char, int, list, string, util, require.
 :- import_module map, assoc_list, pair, ranges.
-:- import_module solutions.
+:- import_module solutions, set.
 
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
@@ -20,14 +20,19 @@ sqjhc mxmxvkd sbzzf (contains fish)",
     E1 = 5,
     io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
-    % util.read_file_as_string("../input/day21.txt", InputString, !IO),
+    util.read_file_as_string("../input/day21.txt", InputString, !IO),
+    Problem1 = parse_input(InputString),
+    P1Answer = part1(Problem1),
+    io.format("P1: got %d\n", [i(P1Answer)], !IO),
     io.print_line("=== * ===", !IO).
 
 :- func part1(problem) = int.
-part1(Problem) = SumOfNonAllergenAppearances :-
-    % {_Allergens, NonAllergens} = determine_allergens(Problem),
-    % Sum the number of times each of the non-allergen ingredients appears in any ingredients list
-    SumOfNonAllergenAppearances = -1.
+part1(Foods) = SumOfNonAllergenAppearances :-
+   AllergenIngredients: list(ingredient) = map.values(determine_allergens(Foods)^assigned),
+   AllIngredients = condense(map((func(F) = F^ingredients), Foods)),
+   NonAllergenIngredients = list.delete_elems(AllIngredients, AllergenIngredients),
+    trace [io(!IO)] (io.write_line({"AllergenIngredients", AllergenIngredients, "NonAllergenIngredients", NonAllergenIngredients}, !IO)),
+    SumOfNonAllergenAppearances = length(NonAllergenIngredients).
 
 :- type problem == list(food).
 :- type food ---> food(ingredients :: list(string), allergens:: list(string)).
@@ -46,10 +51,70 @@ parse_food(Line) = food(Ingredients, Allergens) :-
         Allergens = split_at_string(", ", AlCommaSepd)
      else
          unexpected($module, $pred, format("failed to split food line: %s", [s(Line)]))
-    )
-    .
+    ).
 
-:- type solution == string.
+:- type allergen == string.
+:- type ingredient == string.
+:- type round
+    --->    round(
+                % Maps unassigned allergens to the unassigned ingredients in the foods known to contain the allergen.
+                remaining :: map(allergen, set(ingredient)),
+
+                % Maps an allergen to the ingredient containing it.
+                assigned :: map(allergen, ingredient)
+            ).
+
+
+
+:- func init_round(problem) = round.
+init_round(Foods) = round(Remaining, init) :-
+    Maps = map((func(F) = Result :-
+        Ingredientses = from_list(F^ingredients),
+        Result = foldl((func(K, A) = det_insert(A, K, Ingredientses)), F^allergens, init)
+    ), Foods),
+    union_list((pred(X::in, Y::in, Z::out) is det :-
+        intersect(X, Y, Z)), init, Maps, Remaining).
+
+:- func determine_allergens(problem) = round.
+determine_allergens(Problem) = Result :-
+    Round = init_round(Problem),
+    Result = run_rounds(Round).
+
+:- func run_rounds(round) = round.
+run_rounds(Round) = Result :-
+    Next = run_round(Round),
+    (if
+        Next = Round
+     then
+        Result = Next
+     else
+         Result = run_rounds(Next)
+    ).
+
+:- func run_round(round) = round.
+run_round(Round) = Next :-
+    (if
+        is_empty(Round^remaining)
+    then
+        % trace [io(!IO)] (io.write_line({"DONE"}, !IO)),
+        Next = Round
+    else
+        AToICount = map.map_values_only(set.count, Round^remaining),
+        solutions(inverse_search(AToICount, 1), ToEliminate),
+        % trace [io(!IO)] (io.write_line({"AToICount", AToICount, "ToEliminate", ToEliminate}, !IO)),
+        (if
+            Allergen = head(ToEliminate),
+            singleton_set(Ingredient, map.lookup(Round^remaining, Allergen))
+        then
+            PrevAssigned = Round^assigned,
+            Next^assigned = PrevAssigned^elem(Allergen) := Ingredient,
+            R = delete(Round^remaining, Allergen),
+            map_values_only(set.delete(Ingredient), R, Next^remaining)
+            % , trace [io(!IO)] (io.write_line({"Eliminated", Allergen, Ingredient, "Remaining", map.to_assoc_list(Next^remaining): assoc_list(allergen, set(ingredient))}, !IO))
+        else
+            unexpected($module, $pred, "Not solvable - nothing to eliminate!")
+        )
+    ).
 
 /*
 list(food(ingredients :: list(string), allergens :: list(string))), known :: assoc_list(ingredient, allergen), ingredients, allergens)
