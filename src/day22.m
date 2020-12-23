@@ -30,12 +30,49 @@ Player 2:
     E1 = 306,
     io.format("P1 test: expected %d, got %d\n", [i(E1), i(A1)], !IO),
 
-    % util.read_file_as_string("../input/day22.txt", InputString, !IO),
+    util.read_file_as_string("../input/day22.txt", InputString, !IO),
+    GameStarts = parse_input(InputString),
+    GameEnds = part1(GameStarts),
+    P1 = score(GameEnds),
+    io.format("P1: got %d\n", [i(P1)], !IO),
+
     io.print_line("=== * ===", !IO).
 
 :- func part1(game) = game.
-part1(Problem) = Solution :-
-    Solution = Problem.
+part1(Game) = play(Game).
+
+:- func play(game) = game.
+play(Game) = Result :-
+    Next = play_round(Game),
+    (if
+        Game = Next
+     then
+        Result = Game
+     else
+         Result = play(Next)
+    ).
+
+:- func play_round(game) = game.
+play_round(D1 - D2) = G :-
+    (if
+        [C1 | R1] = D1,
+        [C2 | R2] = D2
+     then
+        (if
+            C1 > C2
+         then
+            NextD1 = append(R1, [C1, C2]),
+            NextD2 = R2,
+            G = NextD1 - NextD2
+         else
+            NextD1 = R1,
+            NextD2 = append(R2, [C2, C1]),
+             G = NextD1 - NextD2
+        )
+     else
+        % Game is already over!
+         G = D1 - D2
+    ).
 
 % Head is top, tail is bottom.
 :- type deck == list(int).
