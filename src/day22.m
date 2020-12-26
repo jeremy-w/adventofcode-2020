@@ -38,7 +38,7 @@ Player 2:
 
     S2 = part2(Example1),
     io.write_line({"S2", S2}, !IO),
-    A2: int = score_recursive(Example1, S2),
+    A2: int = score(S2),
     E2 = 291,
     io.format("P2 test: expected %d, got %d\n", [i(E2), i(A2)], !IO),
 
@@ -154,18 +154,10 @@ play_recursive_round(Game, Seen) = Final - NextSeen :-
         )
     ).
 
-% Recursive combat awards the winner the score of their initial deck.
-:- func score_recursive(game, game) = int.
-score_recursive(Initial, Final) = N :-
-    I1 - I2 = Initial,
-    F1 - _F2 = Final,
-    (if
-        F1 = []
-     then
-        N = score_deck(I2)
-     else
-         N = score_deck(I1)
-    ).
+% MISREADING: Recursive combat awards the winner the score of their initial deck.
+% They actually meant "use the deck  of cards they started with, not any of the recursive ones", not "use the actual deck they were handed at the start of the game."
+
+%-----------------------------------------------------------------------------%
 
 % Head is top, tail is bottom.
 :- type deck == list(int).
