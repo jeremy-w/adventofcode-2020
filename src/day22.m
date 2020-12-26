@@ -6,7 +6,7 @@
 
 :- implementation.
 :- import_module bool, char, int, list, string, util, require.
-:- import_module map, assoc_list, pair, ranges.
+:- import_module map, assoc_list, pair, ranges, set.
 
 main(!IO) :-
     io.format("===[ %s ]===\n", [s($module)], !IO),
@@ -35,6 +35,12 @@ Player 2:
     GameEnds = part1(GameStarts),
     P1 = score(GameEnds),
     io.format("P1: got %d (expected 30780)\n", [i(P1)], !IO),
+
+    S2 = part2(Example1),
+    io.write_line({"S2", S2}, !IO),
+    A2: int = score_recursive(Example1, S2),
+    E2 = 291,
+    io.format("P2 test: expected %d, got %d\n", [i(E2), i(A2)], !IO),
 
     io.print_line("=== * ===", !IO).
 
@@ -72,6 +78,85 @@ play_round(D1 - D2) = G :-
      else
         % Game is already over!
          G = D1 - D2
+    ).
+
+:- func part2(game) = game.
+part2(Game) = play_recursive(Game, set.init).
+
+:- func play_recursive(game, set(game)) = game.
+play_recursive(Game, Seen) = Result :-
+    Next - NextSeen = play_recursive_round(Game, Seen),
+    (if
+        Game = Next
+     then
+        Result = Game
+     else
+         Result = play_recursive(Next, NextSeen)
+    ).
+
+:- func play_recursive_round(game, set(game)) = pair(game, set(game)).
+play_recursive_round(Game, Seen) = Final - NextSeen :-
+    (if
+        member(Game, Seen)
+     then
+        % Loop avoidance rule kicks in: winner is player 1
+        D1 - _D2 = Game,
+        Final = D1 - [],
+        NextSeen = Seen
+     else
+         % Round not previously seen in this game. Remember it.
+         NextSeen = insert(Seen, Game),
+         D1 - D2 = Game,
+        (if
+            [C1 | R1] = D1,
+            [C2 | R2] = D2
+        then
+            (if
+                take(C1, R1, SubDeck1),
+                take(C2, R2, SubDeck2)
+            then
+                % Recursive combat!
+                SubGame = SubDeck1 - SubDeck2,
+                W1 - _W2 = play_recursive(SubGame, set.init),
+                (if
+                    W1 = []
+                 then
+                    NextD1 = append(R1, [C1, C2]),
+                    NextD2 = R2,
+                    Final = NextD1 - NextD2
+                 else
+                     NextD1 = R1,
+                    NextD2 = append(R2, [C2, C1]),
+                    Final = NextD1 - NextD2
+                )
+            else if
+                C1 > C2
+            then
+                NextD1 = append(R1, [C1, C2]),
+                NextD2 = R2,
+                Final = NextD1 - NextD2
+            else
+                NextD1 = R1,
+                NextD2 = append(R2, [C2, C1]),
+                Final = NextD1 - NextD2
+            )
+        else
+            % Game is already over!
+            Final = D1 - D2
+        )
+    ).
+
+% Recursive combat awards the winner the score of their initial deck.
+:- func score_recursive(game, game) = int.
+score_recursive(Initial, Final) = N :-
+    I1 - I2 = Initial,
+    F1 - _F2 = Final,
+    (if
+        F1 = []
+     then
+        N = score_deck(I2)
+     else
+         N = score_deck(I1)
     ).
 
 % Head is top, tail is bottom.
