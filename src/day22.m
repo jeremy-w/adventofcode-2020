@@ -42,6 +42,10 @@ Player 2:
     E2 = 291,
     io.format("P2 test: expected %d, got %d\n", [i(E2), i(A2)], !IO),
 
+    RecursiveGameEnds = part2(GameStarts),
+    P2 = score(RecursiveGameEnds),
+    io.format("P2: got %d (expected 36621)\n", [i(P2)], !IO),
+
     io.print_line("=== * ===", !IO).
 
 :- func part1(game) = game.
@@ -99,12 +103,12 @@ play_recursive(Game, Seen) = Result :-
 
 :- func play_recursive_round(game, set(game)) = pair(game, set(game)).
 play_recursive_round(Game, Seen) = Final - NextSeen :-
-    trace [io(!IO)] (io.write_line({"Playing round", count(Seen): int, Game}, !IO)),
+    trace [io(!IO), runtime(env("TRACE"))] (io.write_line({"Playing round", count(Seen): int, Game}, !IO)),
     (if
         member(Game, Seen)
      then
         % Loop avoidance rule kicks in: winner is player 1
-        trace [io(!IO)] (io.write_line({"Recursion! Player 1 wins by fiat."}, !IO)),
+        trace [io(!IO), runtime(env("TRACE"))] (io.write_line({"Recursion! Player 1 wins by fiat."}, !IO)),
         D1 - _D2 = Game,
         Final = D1 - [],
         NextSeen = Seen
@@ -122,17 +126,17 @@ play_recursive_round(Game, Seen) = Final - NextSeen :-
             then
                 % Recursive combat!
                 SubGame = SubDeck1 - SubDeck2,
-                trace [io(!IO)] (io.write_line({"Playing a subgame", SubGame}, !IO)),
+                trace [io(!IO), runtime(env("TRACE"))] (io.write_line({"Playing a subgame", SubGame}, !IO)),
                 W1 - W2 = play_recursive(SubGame, set.init),
                 (if
                     W2 = []
                  then
-                    trace [io(!IO)] (io.write_line({"Player 1 won subgame", W1}, !IO)),
+                    trace [io(!IO), runtime(env("TRACE"))] (io.write_line({"Player 1 won subgame", W1}, !IO)),
                     NextD1 = append(R1, [C1, C2]),
                     NextD2 = R2,
                     Final = NextD1 - NextD2
                  else
-                    trace [io(!IO)] (io.write_line({"Player 2 won subgame", W2}, !IO)),
+                    trace [io(!IO), runtime(env("TRACE"))] (io.write_line({"Player 2 won subgame", W2}, !IO)),
                     NextD1 = R1,
                     NextD2 = append(R2, [C2, C1]),
                     Final = NextD1 - NextD2
