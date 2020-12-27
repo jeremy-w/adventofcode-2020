@@ -2091,14 +2091,6 @@ E = parse_input(example)
 R = arrange(E)
 # print_grid(R)
 
-
-# x = 1
-# ans = [x*c for c in corners(R)]
-P = parse_input(puzzle_input)
-A = arrange(P)
-# print_grid(A)
-part1_answer = 2753*1087*1327*1009  # 4006801655873
-
 # Part 2:
 # Take the arrangement and strip the border off every arranged tile.
 
@@ -2187,12 +2179,13 @@ def tile_monsters(tile: Tile) -> int:
     rows = [''.join(row) for row in tile[ROWS]]
     for y in range(1, len(rows) - 1):
         m = MONSTER_REGEX[1].search(rows[y])
-        if m:
+        while m:
             cols_to_drop = m.start()
             row_above = rows[y - 1][cols_to_drop:]
             row_below = rows[y + 1][cols_to_drop:]
             if MONSTER_REGEX[0].match(row_above) and MONSTER_REGEX[2].match(row_below):
                 monster_count += 1
+            m = MONSTER_REGEX[1].search(rows[y], m.end())
     # Easiest is probably to use regex to match the middle row of the monster, then if we get a hit, take rows around, whack off prefix to match index, and check them.
     return monster_count
 
@@ -2202,6 +2195,11 @@ HAS_SEA_MONSTER = (0, [list(x) for x in '''.#.#...#.###...#.##.##..
 ..##.###.####..#.####.##'''.splitlines()])
 
 check('tile_monsters', tile_monsters(HAS_SEA_MONSTER), 1)
+
+DOUBLE_MONSTERS = (2, [list(x) for x in [2*'.#.#...#.###...#.##.##..',
+                                         2*'#.#.##.###.#.##.##.#####', 2*'..##.###.####..#.####.##']])
+
+check('double monsters', tile_monsters(DOUBLE_MONSTERS), 2)
 
 
 def monster_count(image: str) -> int:
@@ -2232,6 +2230,13 @@ def part2_answer(image: str) -> int:
 
 
 check('part2_answer', part2_answer(test_image), 273)
+
+# x = 1
+# ans = [x*c for c in corners(R)]
+P = parse_input(puzzle_input)
+A = arrange(P)
+# print_grid(A)
+part1_answer = 2753*1087*1327*1009  # 4006801655873
 
 print('== SOLVING: Part 2! ==')
 puzzle_image = grid_to_image(grid_without_borders(A))
