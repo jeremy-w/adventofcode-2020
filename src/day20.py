@@ -2174,10 +2174,10 @@ SEA_MONSTER = '''                  #
  #  #  #  #  #  #'''
 MONSTER_CHOP = len([x for x in SEA_MONSTER if x == '#'])
 
-MONSTER_REGEXEN = [
-    re.compile('^..................#'),
+MONSTER_REGEX = [
+    re.compile('^..................#.'),
     re.compile('#....##....##....###'),
-    re.compile('^#..#..#..#..#..#')
+    re.compile('^.#..#..#..#..#..#...')
 ]
 
 
@@ -2186,26 +2186,33 @@ def tile_monsters(tile: Tile) -> int:
     monster_count = 0
     rows = [''.join(row) for row in tile[ROWS]]
     for y in range(1, len(rows) - 1):
-        m = MONSTER_REGEXEN[1].search(rows[y])
+        m = MONSTER_REGEX[1].search(rows[y])
         if m:
             cols_to_drop = m.start()
             row_above = rows[y - 1][cols_to_drop:]
             row_below = rows[y + 1][cols_to_drop:]
-            if MONSTER_REGEXEN[0].match(row_above) and MONSTER_REGEXEN[2].match(row_below):
+            if MONSTER_REGEX[0].match(row_above) and MONSTER_REGEX[2].match(row_below):
                 monster_count += 1
     # Easiest is probably to use regex to match the middle row of the monster, then if we get a hit, take rows around, whack off prefix to match index, and check them.
     return monster_count
 
 
+HAS_SEA_MONSTER = (0, [list(x) for x in '''.#.#...#.###...#.##.##..
+#.#.##.###.#.##.##.#####
+..##.###.####..#.####.##'''.splitlines()])
+
+check('tile_monsters', tile_monsters(HAS_SEA_MONSTER), 1)
+
+
 def monster_count(image: str) -> int:
     fake_input = f'Tile 9001:\n{image}'
     tile = parse_input(fake_input)[0]
-    print_tile(tile, header=True)
+    # print_tile(tile, header=True)
     for variant in variants(tile):
-        print('\n\n\nchecking', show_tile(variant))
+        # print('\n\n\nchecking', show_tile(variant))
         n = tile_monsters(variant)
         if n > 0:
-            print(f'found {n} monsters in variant', show_tile(variant))
+            # print(f'found {n} monsters in variant', show_tile(variant))
             return n
     return -1
 
