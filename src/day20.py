@@ -2095,7 +2095,7 @@ R = arrange(E)
 # x = 1
 # ans = [x*c for c in corners(R)]
 P = parse_input(puzzle_input)
-# A = arrange(P)
+A = arrange(P)
 # print_grid(A)
 part1_answer = 2753*1087*1327*1009  # 4006801655873
 
@@ -2209,10 +2209,10 @@ def monster_count(image: str) -> int:
     tile = parse_input(fake_input)[0]
     # print_tile(tile, header=True)
     for variant in variants(tile):
-        # print('\n\n\nchecking', show_tile(variant))
+        # print('\n\n\n\tchecking\n', show_tile(variant))
         n = tile_monsters(variant)
         if n > 0:
-            # print(f'found {n} monsters in variant', show_tile(variant))
+            print(f'found {n} monsters in variant:\n', show_tile(variant))
             return n
     return -1
 
@@ -2233,6 +2233,10 @@ def part2_answer(image: str) -> int:
 
 check('part2_answer', part2_answer(test_image), 273)
 
-#puzzle_image = grid_to_image(grid_without_borders(A))
-# final_answer = part2_answer(puzzle_image)
-# print(f'Part 2: got {final_answer}')
+print('== SOLVING: Part 2! ==')
+puzzle_image = grid_to_image(grid_without_borders(A))
+final_answer = part2_answer(puzzle_image)
+assert final_answer < 1883, 'final answer was too high'
+
+print(f'Part 2: got {final_answer}')
+print('== * ==')
